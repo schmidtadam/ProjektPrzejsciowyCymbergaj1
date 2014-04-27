@@ -3,6 +3,7 @@
 //
 
 #pragma once
+
 #include "RgbImage.h"
 
 // COGL2Dlg dialog

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <gl\glut.h> // glut.h includes gl.h and glu.h
 #include <ode/ode.h>
 #include "matrix.h"//biblioteka obslugujaca macierze 4x4;

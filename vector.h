@@ -1,5 +1,6 @@
 // Vector Class    by Alan Baylis 2001
 
+
 #ifndef _Vector_H
 #define _Vector_H
 

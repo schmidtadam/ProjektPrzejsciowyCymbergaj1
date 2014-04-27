@@ -1,9 +1,12 @@
 #pragma once
+
 #include <gl\glut.h> // glut.h includes gl.h and glu.h
 #include <ode/ode.h> // ode library header
+//#include <src/ccd/ccd.h>
 #include "matrix.h"
 #include "Ground.h"
 #include "OdeGeom.h"
+
 // some constants
 #define DENSITY (0.5) // density of all objects
 #define GEOMSPERBODY 1 // maximum number of geometries per body

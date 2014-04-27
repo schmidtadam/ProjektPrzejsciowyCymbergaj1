@@ -91,6 +91,7 @@ void COdeWorld::SimStep(double dt)
 	DrawGeom(pady[3].Geom[0], 0, 0, 0, 1, 0);
 	glPushName(0); //id obiektu - oblsuga myszki
 	DrawGeom(Object[5].Geom[0], 0, 0, 1, 1, 1); //rysuje sfere
+	DrawGeom(Object[6].Geom[0], 0, 0, 1, 1, 1); //rysuje sfere 2
 	DrawGeom(krazek.Geom[0], 0, 0, 0, 0, 1); //rysuje krazek
 	ground.DrawGrid(); //rysuje ziemie
 
@@ -137,7 +138,18 @@ void COdeWorld::SimStep(double dt)
 			dBodySetRotation(pady[3].Body, R);
 		}
 	}
-	
+	// ---------------- obliczanie kolizji z krazekiem ------------------
+	dVector3 posKrazek;
+	dBodyCopyPosition (krazek.Body, posKrazek);
+	dVector3 posPad1;
+	dBodyCopyPosition (pady[0].Body, posPad1);
+	dVector3 posPad2;
+	dBodyCopyPosition (pady[2].Body, posPad2);
+	dReal distance1=sqrt((posKrazek[0]-posPad1[0])*(posKrazek[0]-posPad1[0])+(posKrazek[1]-posPad1[1])*(posKrazek[1]-posPad1[1]));
+	dReal distance2=sqrt((posKrazek[0]-posPad2[0])*(posKrazek[0]-posPad2[0])+(posKrazek[1]-posPad2[1])*(posKrazek[1]-posPad2[1]));
+	//if(distance1<=0.028 || distance2<=0.028) // suma promieni krazka i pada to 0.3, ale dla takiego ustawienia jakby wczeœniej reaguje
+	//	exit(0);
+	//-------------------------------------------------------------------
 }
 void COdeWorld::InitODE()
 {
@@ -268,6 +280,16 @@ void COdeWorld::InitODE()
 	Object[5].Geom[0] = dCreateSphere(Space, 0.01);
 	dGeomSetBody(Object[5].Geom[0], Object[5].Body);
 	dBodySetMass(Object[5].Body, &m);
+
+	Object[6].Body = dBodyCreate(World);
+	dBodySetPosition(Object[6].Body, -0.1, 0.5, 0.1);
+	dBodySetLinearVel(Object[6].Body, 0, 0, 0);
+	dRFromAxisAndAngle(R, 1, 0, 1, 1);
+	dBodySetRotation(Object[6].Body, R);
+	dMassSetSphere(&m, mass/10, 0.05);
+	Object[6].Geom[0] = dCreateSphere(Space, 0.01);
+	dGeomSetBody(Object[6].Geom[0], Object[6].Body);
+	dBodySetMass(Object[6].Body, &m);
 
 	// krazek
 	radius=0.01;

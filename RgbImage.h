@@ -18,6 +18,7 @@
  *
  */
 
+
 #ifndef RGBIMAGE_H
 #define RGBIMAGE_H
 

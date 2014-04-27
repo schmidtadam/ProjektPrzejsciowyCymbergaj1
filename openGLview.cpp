@@ -5,6 +5,7 @@
 
 openGLview::openGLview(void)
 {
+	dInitODE();
 	dynamicWorld.InitODE(); //inicjalizacja srodowiska ode
 	dynamicWorld.size=2;
 	selected_id=0;
