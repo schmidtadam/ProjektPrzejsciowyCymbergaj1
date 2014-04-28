@@ -22,7 +22,7 @@ void COdeGeom::loadTextureFromFile(char *filename)
 }
 
 //rysuje szescian
-void COdeGeom::DrawBox(dReal * sides, const float * pos, const float * R)
+void COdeGeom::DrawBox(dReal * sides, const float * pos, const float * R, float red, float green, float blue)
 {
 	double side[3];
 	side[0] = sides[0] / 2*10;
@@ -40,15 +40,22 @@ void COdeGeom::DrawBox(dReal * sides, const float * pos, const float * R)
 	glPushMatrix();
 	GeomMatrix.ODEtoOGL(pos1, R);
 	glMultMatrixf(GeomMatrix.Element);
-	float colors_rgb[12][3] =
+	//float colors_rgb[12][3] =
+	//{
+	//	{0.5f,0.1f,0.1f }, {1.0f,0.1f,0.1f }, // Red
+	//	{0.5f,0.5f,0.1f }, {1.0f,1.0f,0.1f }, // Yellow
+	//	{0.1f,0.5f,0.1f }, {0.1f,1.0f,0.1f }, // Green
+	//	{0.1f,0.5f,0.5f }, {0.1f,1.0f,1.0f }, // Cyan
+	//	{0.1f,0.1f,0.5f }, {0.1f,0.1f,1.0f }, // Blue
+	//	{0.5f,0.1f,0.5f }, {1.0f,0.1f,1.0f } // Magenta
+	//	};
+	float colors_rgb[12][3];
+	for(int i=0; i<12; i++)
 	{
-		{0.5f,0.1f,0.1f }, {1.0f,0.1f,0.1f }, // Red
-		{0.5f,0.5f,0.1f }, {1.0f,1.0f,0.1f }, // Yellow
-		{0.1f,0.5f,0.1f }, {0.1f,1.0f,0.1f }, // Green
-		{0.1f,0.5f,0.5f }, {0.1f,1.0f,1.0f }, // Cyan
-		{0.1f,0.1f,0.5f }, {0.1f,0.1f,1.0f }, // Blue
-		{0.5f,0.1f,0.5f }, {1.0f,0.1f,1.0f } // Magenta
-		};
+		colors_rgb[i][0]=red;
+		colors_rgb[i][1]=green;
+		colors_rgb[i][2]=blue;
+	}
 	glBegin(GL_QUADS);
 	// Front Face
 	glNormal3f(0.0, 0.0, 1.0);

@@ -32,10 +32,12 @@ public:
 	MATRIX GeomMatrix;
 	// dynamics and collision objects
 	dSpaceID Space; // collision space
+	dSpaceID Space2; // collision space
 	dJointGroupID jointgroup; // contact group for the new joint
 	dJointID Joint; // the joint ID
 	MyObject Object[15]; // tablica z obiektami które wystepuja na scenie
 	MyObject krazek;
+	MyObject bramka[2];
 	MyObject pady[4];
 	CGround ground; //ziemia
 	dGeomID plane; //ground in ode
@@ -46,6 +48,7 @@ public:
 
 	dJointID Joints[10];
 	dJointID Joints2[10];
+	dJointID Joints_bramka[5];
 	float ster[5];
 	int pom; // zmienna iteruj¹ca obiegi pêtli glownej
 };

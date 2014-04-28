@@ -13,7 +13,7 @@ public:
 	~COdeGeom(void);
 	void DrawSphere(float radius, const float *pos, const float *R);//rysuje sfere
 	void DrawCappedCylinder(const float * pos, const float *R, float radius, float length);//rysuje pigule
-	void DrawBox(dReal * sides, const float * pos, const float * R);//rysuje szescian
+	void DrawBox(dReal * sides, const float * pos, const float * R, float red, float green, float blue);//rysuje szescian
 	void loadTextureFromFile(char *filename);
 	void DrawCylinder(const float * pos, const float *R, float radius, float length, float red, float green, float blue); // rusuje walec
 	MATRIX GeomMatrix; //macierz do przeksztalcen

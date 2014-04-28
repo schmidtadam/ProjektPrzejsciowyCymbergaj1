@@ -68,7 +68,7 @@ void COdeWorld::DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red,
 	{
 		dReal sides[3];
 		dGeomBoxGetLengths(g, sides);
-		geometry.DrawBox(sides, (const float*)pos, (const float*)R); //rysuje szescian
+		geometry.DrawBox(sides, (const float*)pos, (const float*)R, red, green, blue); //rysuje szescian
 	}
 
 	
@@ -80,7 +80,7 @@ void COdeWorld::SimStep(double dt)
 	dWorldQuickStep(World, dt); //wykonuje krok symulacji
 	dJointGroupEmpty(contactgroup);
 	for (int bodies = 0;bodies<5;bodies++)//rysowanie obiektow
-		DrawGeom(Object[bodies].Geom[0], 0, 0, 1, 1, 1); //rysuje obiekt
+		DrawGeom(Object[bodies].Geom[0], 0, 0, 1, 1, 1); //rysuje stol (bialy)
 	glPushName(1); //id obiektu - oblsuga myszki
 	DrawGeom(pady[0].Geom[0], 0, 0, 1, 0, 0); //rysuje pady
 	glPushName(1); //id obiektu - oblsuga myszki
@@ -91,52 +91,42 @@ void COdeWorld::SimStep(double dt)
 	DrawGeom(pady[3].Geom[0], 0, 0, 0, 1, 0);
 	glPushName(0); //id obiektu - oblsuga myszki
 	DrawGeom(Object[5].Geom[0], 0, 0, 1, 1, 1); //rysuje sfere
-	DrawGeom(Object[6].Geom[0], 0, 0, 1, 1, 1); //rysuje sfere 2
 	DrawGeom(krazek.Geom[0], 0, 0, 0, 0, 1); //rysuje krazek
+	DrawGeom(bramka[0].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 1 (blekitne)
+	DrawGeom(bramka[1].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 2
 	ground.DrawGrid(); //rysuje ziemie
 
 	//----------- sterowanie obiektami ---------------------
 	if(dx[0] || dy[0] || dz[0] !=0)
 	{
-		dBodySetLinearVel(Object[5].Body, dx[0], dy[0], dz[0]);
+		dBodySetForce(Object[5].Body, dx[0], dy[0], dz[0]);
 		dx[0]=0;dy[0]=0;dz[0]=0;
 	}
 	if(dx[1] || dz[1] !=0)
 	{
-		dBodySetLinearVel(pady[0].Body, dx[1], 0, dz[1]);
+		dBodySetForce(pady[0].Body, dx[1], 0, dz[1]);
 		dx[1]=0;dz[1]=0;
 	}
 	if(dx[2] || dz[2] !=0)
 	{
-		dBodySetLinearVel(pady[2].Body, dx[2], 0, dz[2]);
+		dBodySetForce(pady[2].Body, dx[2], 0, dz[2]);
 		dx[2]=0;dz[2]=0;
 	}
 
-	// -------------- zeby sie odwrocily pady:
-	// nadanie padom odpowiedniej rotacji w pierwszych obiegach petli programu
-	if(pom==0)
-	{
-		dMatrix3 R;//macierz rotacji
-		dRFromAxisAndAngle(R, 1, 0, 0, 30);
-		dBodySetRotation(pady[0].Body, R);
-		dBodySetRotation(pady[1].Body, R);
-		dBodySetRotation(pady[2].Body, R);
-		dBodySetRotation(pady[3].Body, R);
-		pom=1;
-	}
-
-	if(pom<12)
+	// Ograniczenia obrotow i pozycji
+	const dReal *KrazekVel;
+	const dReal *Pad2Vel;
+	if(pom<400)
 	{
 		pom++;
-		if(pom==11)
-		{
-			dMatrix3 R;//macierz rotacji
-			dRFromAxisAndAngle(R, 1, 0, 0, 0);
-			dBodySetRotation(pady[0].Body, R);
-			dBodySetRotation(pady[1].Body, R);
-			dBodySetRotation(pady[2].Body, R);
-			dBodySetRotation(pady[3].Body, R);
-		}
+	}
+	if(pom==400)
+	{
+		dBodySetAngularVel(krazek.Body, 0, 0, 0); // ograniczenie pr. obrotowej krazka
+		KrazekVel=dBodyGetLinearVel (krazek.Body);
+		dBodySetLinearVel(krazek.Body, *KrazekVel, 0, *(KrazekVel+2)); // ograniczenie pr. liniowej w osi y krazka
+		Pad2Vel=dBodyGetLinearVel (pady[2].Body);
+		dBodySetLinearVel(pady[2].Body, *Pad2Vel, 0, *(Pad2Vel+2)); // ograniczenie pr. liniowej w osi y pada2
 	}
 	// ---------------- obliczanie kolizji z krazekiem ------------------
 	dVector3 posKrazek;
@@ -235,7 +225,7 @@ void COdeWorld::InitODE()
 	sides[2] = bandy_h;
 	dBodySetPosition(Object[4].Body, 0.0, 0.06, 0.39); // ustawienie pozycji
 	dBodySetLinearVel(Object[4].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
-	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie pocatkowej orientacji obiektu
+	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
 	dBodySetRotation(Object[4].Body, R);
 	dMassSetBox(&m, mass*10, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
 	Object[4].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
@@ -281,38 +271,31 @@ void COdeWorld::InitODE()
 	dGeomSetBody(Object[5].Geom[0], Object[5].Body);
 	dBodySetMass(Object[5].Body, &m);
 
-	Object[6].Body = dBodyCreate(World);
-	dBodySetPosition(Object[6].Body, -0.1, 0.5, 0.1);
-	dBodySetLinearVel(Object[6].Body, 0, 0, 0);
-	dRFromAxisAndAngle(R, 1, 0, 1, 1);
-	dBodySetRotation(Object[6].Body, R);
-	dMassSetSphere(&m, mass/10, 0.05);
-	Object[6].Geom[0] = dCreateSphere(Space, 0.01);
-	dGeomSetBody(Object[6].Geom[0], Object[6].Body);
-	dBodySetMass(Object[6].Body, &m);
-
 	// krazek
 	radius=0.01;
 	length=0.005;
 	krazek.Body = dBodyCreate(World);
-	dBodySetPosition(krazek.Body, 0.1, 0.07, 0);
+	dBodySetPosition(krazek.Body, 0.1, 0.06, 0);
 	dBodySetLinearVel(krazek.Body, 0, 0, 0);
 	dRFromAxisAndAngle(R, 1, 0, 0, 90);
 	dBodySetRotation(krazek.Body, R);
-	dMassSetCylinder(&m, mass*3, 1, radius, length);
+	dMassSetCylinder(&m, mass*5, 1, radius, length);
 	krazek.Geom[0] = dCreateCylinder(Space, radius, length);
 	dGeomSetBody(krazek.Geom[0], krazek.Body);
 	dBodySetMass(krazek.Body, &m);
 	//*********************************pady****************************
+	int massScaler=5; // dla podstaw
+	int XinitAngVel=-100; // ustawienie poczatkowej pr. obrotowej - zeby sie odwrocily
 	// pad1 - podstawa
 	radius=0.02;
 	length=0.01;
 	pady[0].Body = dBodyCreate(World);
 	dBodySetPosition(pady[0].Body, -0.1, 0.07, 0);
 	dBodySetLinearVel(pady[0].Body, 0, 0, 0);
+	dBodySetAngularVel(pady[0].Body, XinitAngVel, 0, 0);
 	dRFromAxisAndAngle(R, 1, 0, 0, 0);
 	dBodySetRotation(pady[0].Body, R);
-	dMassSetCylinder(&m, mass*3, 1, radius, length);
+	dMassSetCylinder(&m, mass*massScaler, 1, radius, length);
 	pady[0].Geom[0] = dCreateCylinder(Space, radius, length);
 	dGeomSetBody(pady[0].Geom[0], pady[0].Body);
 	dBodySetMass(pady[0].Body, &m);
@@ -323,6 +306,7 @@ void COdeWorld::InitODE()
 	pady[1].Body = dBodyCreate(World);
 	dBodySetPosition(pady[1].Body, -0.1, 0.07, 0.015);
 	dBodySetLinearVel(pady[1].Body, 0, 0, 0);
+	dBodySetAngularVel(pady[1].Body, XinitAngVel, 0, 0);
 	dRFromAxisAndAngle(R, 1, 0, 0, 0);
 	dBodySetRotation(pady[1].Body, R);
 	dMassSetCylinder(&m, mass, 1, radius, length);
@@ -344,9 +328,10 @@ void COdeWorld::InitODE()
 	pady[2].Body = dBodyCreate(World);
 	dBodySetPosition(pady[2].Body, 0, 0.07, 0);
 	dBodySetLinearVel(pady[2].Body, 0, 0, 0);
+	dBodySetAngularVel(pady[2].Body, XinitAngVel, 0, 0);
 	dRFromAxisAndAngle(R, 1, 0, 0, 0);
 	dBodySetRotation(pady[2].Body, R);
-	dMassSetCylinder(&m, mass*3, 1, radius, length);
+	dMassSetCylinder(&m, mass*massScaler, 1, radius, length);
 	pady[2].Geom[0] = dCreateCylinder(Space, radius, length);
 	dGeomSetBody(pady[2].Geom[0], pady[2].Body);
 	dBodySetMass(pady[2].Body, &m);
@@ -357,9 +342,10 @@ void COdeWorld::InitODE()
 	pady[3].Body = dBodyCreate(World);
 	dBodySetPosition(pady[3].Body, 0, 0.07, 0.015);
 	dBodySetLinearVel(pady[3].Body, 0, 0, 0);
+	dBodySetAngularVel(pady[3].Body, XinitAngVel, 0, 0);
 	dRFromAxisAndAngle(R, 1, 0, 0, 0);
 	dBodySetRotation(pady[3].Body, R);
-	dMassSetCylinder(&m, mass*3, 1, radius, length);
+	dMassSetCylinder(&m, mass, 1, radius, length);
 	pady[3].Geom[0] = dCreateCylinder(Space, radius, length);
 	dGeomSetBody(pady[3].Geom[0], pady[3].Body);
 	dBodySetMass(pady[3].Body, &m);
@@ -370,6 +356,49 @@ void COdeWorld::InitODE()
     dJointSetHingeAxis(Joints2[1], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints2[1], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints2[1], dParamHiStop, 0);//ruchu
+
+	//**********bramki**************
+//	glColor3f(1.0f,1.0f,1.0f); //<-to nie dziala, jak ustawic kolory ?
+	bramka[0].Body = dBodyCreate(World);//tworzona jest bramka tylna
+	sides[0] = 0.13;//ustalane sa wymiary bramki
+	sides[1] = bandy_h;
+	sides[2] = 0.001;
+	dBodySetPosition(bramka[0].Body, 0.0, 0.06, 0.38); // ustawienie pozycji
+	dBodySetLinearVel(bramka[0].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
+	dBodySetRotation(bramka[0].Body, R);
+	dMassSetBox(&m, mass*10, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
+	bramka[0].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(bramka[0].Geom[0], bramka[0].Body);//powiazanie wymiarow i masy
+	dBodySetMass(bramka[0].Body, &m);
+
+	bramka[1].Body = dBodyCreate(World);//tworzona jest bramka przednia
+	sides[0] = 0.13;//ustalane sa wymiary bramki
+	sides[1] = bandy_h;
+	sides[2] = 0.001;
+	dBodySetPosition(bramka[1].Body, 0.0, 0.06, -0.38); // ustawienie pozycji
+	dBodySetLinearVel(bramka[1].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
+	dBodySetRotation(bramka[1].Body, R);
+	dMassSetBox(&m, mass*10, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
+	bramka[1].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(bramka[1].Geom[0], bramka[1].Body);//powiazanie wymiarow i masy
+	dBodySetMass(bramka[1].Body, &m);
+
+	Joints_bramka[0] = dJointCreateHinge(World, jointgroup);
+    dJointAttach(Joints_bramka[0], Object[3].Body, bramka[0].Body);
+    dJointSetHingeAnchor(Joints_bramka[0], 0.19, 0, 0);//pozycja
+    dJointSetHingeAxis(Joints_bramka[0], 0, 1, 0);//os wzdluz ktorej prowadzi zlacze
+    dJointSetHingeParam(Joints_bramka[0], dParamLoStop, 0);//mozliwy zakres 
+    dJointSetHingeParam(Joints_bramka[0], dParamHiStop, 0);//ruchu
+
+	Joints_bramka[1] = dJointCreateHinge(World, jointgroup);
+    dJointAttach(Joints_bramka[1], Object[4].Body, bramka[1].Body);
+    dJointSetHingeAnchor(Joints_bramka[1], 0.19, 0, 0);//pozycja
+    dJointSetHingeAxis(Joints_bramka[1], 0, 1, 0);//os wzdluz ktorej prowadzi zlacze
+    dJointSetHingeParam(Joints_bramka[1], dParamLoStop, 0);//mozliwy zakres 
+    dJointSetHingeParam(Joints_bramka[1], dParamHiStop, 0);//ruchu
+
 
 }
 void COdeWorld::CloseODE()
