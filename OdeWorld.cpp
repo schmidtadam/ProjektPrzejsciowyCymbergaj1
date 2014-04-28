@@ -30,9 +30,15 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 		}
 	}
 }
+
 COdeWorld::COdeWorld(void)
 {
 	pom=0;
+	flaga1=true;
+	flaga2=true;
+	licznik1=0;
+	licznik2=0;
+	golLicznik=0;
 }
 COdeWorld::~COdeWorld(void)
 {
@@ -41,6 +47,7 @@ COdeWorld::~COdeWorld(void)
 	dSpaceDestroy(Space);
 	dWorldDestroy(World);
 }
+
 // Draw a geom
 void COdeWorld::DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red, float green, float blue)
 {
@@ -70,8 +77,6 @@ void COdeWorld::DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red,
 		dGeomBoxGetLengths(g, sides);
 		geometry.DrawBox(sides, (const float*)pos, (const float*)R, red, green, blue); //rysuje szescian
 	}
-
-	
 }
 // Simulation step
 void COdeWorld::SimStep(double dt)
@@ -90,20 +95,32 @@ void COdeWorld::SimStep(double dt)
 	glPushName(2); //id obiektu - oblsuga myszki
 	DrawGeom(pady[3].Geom[0], 0, 0, 0, 1, 0);
 	glPushName(0); //id obiektu - oblsuga myszki
-	DrawGeom(Object[5].Geom[0], 0, 0, 1, 1, 1); //rysuje sfere
+	
 	DrawGeom(krazek.Geom[0], 0, 0, 0, 0, 1); //rysuje krazek
 	DrawGeom(bramka[0].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 1 (blekitne)
 	DrawGeom(bramka[1].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 2
 	ground.DrawGrid(); //rysuje ziemie
-	sprintf(wynik, "%d : %d", licznik1, licznik2);
+
+	// -------- test kolizji ---------------
+	dVector3 posKrazek;
+	dBodyCopyPosition (krazek.Body, posKrazek);
+	const dReal *KrazekVel;
+	KrazekVel=dBodyGetLinearVel (krazek.Body);
+	sprintf(wynik, "Pozycja krazka:");
+	drawText(-0.25, 1.6, -4.5, wynik, 1.0, 1.0, 1.0);
+	sprintf(wynik, "x:%.3f y:%.3f z:%.3f", posKrazek[0], posKrazek[1], posKrazek[2]);
+	drawText(-0.25, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
+	if(posKrazek[0] < 0.076 && posKrazek[0] > -0.076)
+		if(posKrazek[2] < -0.368 || posKrazek[2] > 0.368)
+		{
+			golLicznik++;
+			dBodySetPosition(krazek.Body, 0.1, 0.052, 0);
+			dBodySetLinearVel(krazek.Body, *KrazekVel, *(KrazekVel+1), 0);
+		}	
+	sprintf(wynik, "Trafienia: %d", golLicznik);
 	drawText(-0.25, 1.0, -4.5, wynik, 1.0, 1.0, 1.0);
 
 	//----------- sterowanie obiektami ---------------------
-	if(dx[0] || dy[0] || dz[0] !=0)
-	{
-		dBodySetForce(Object[5].Body, dx[0], dy[0], dz[0]);
-		dx[0]=0;dy[0]=0;dz[0]=0;
-	}
 	if(dx[1] || dz[1] !=0)
 	{
 		dBodySetForce(pady[0].Body, dx[1], 0, dz[1]);
@@ -115,8 +132,7 @@ void COdeWorld::SimStep(double dt)
 		dx[2]=0;dz[2]=0;
 	}
 
-	// Ograniczenia obrotow i pozycji
-	const dReal *KrazekVel;
+	// ----------- Ograniczenia obrotow i pozycji po ustaleniu sie pozycji obiektow -----------
 	const dReal *Pad2Vel;
 	if(pom<400)
 	{
@@ -125,22 +141,44 @@ void COdeWorld::SimStep(double dt)
 	if(pom==400)
 	{
 		dBodySetAngularVel(krazek.Body, 0, 0, 0); // ograniczenie pr. obrotowej krazka
-		KrazekVel=dBodyGetLinearVel (krazek.Body);
 		dBodySetLinearVel(krazek.Body, *KrazekVel, 0, *(KrazekVel+2)); // ograniczenie pr. liniowej w osi y krazka
 		Pad2Vel=dBodyGetLinearVel (pady[2].Body);
 		dBodySetLinearVel(pady[2].Body, *Pad2Vel, 0, *(Pad2Vel+2)); // ograniczenie pr. liniowej w osi y pada2
 	}
 	// ---------------- obliczanie kolizji z krazekiem ------------------
-	dVector3 posKrazek;
-	dBodyCopyPosition (krazek.Body, posKrazek);
 	dVector3 posPad1;
 	dBodyCopyPosition (pady[0].Body, posPad1);
 	dVector3 posPad2;
 	dBodyCopyPosition (pady[2].Body, posPad2);
-	dReal distance1=sqrt((posKrazek[0]-posPad1[0])*(posKrazek[0]-posPad1[0])+(posKrazek[1]-posPad1[1])*(posKrazek[1]-posPad1[1]));
-	dReal distance2=sqrt((posKrazek[0]-posPad2[0])*(posKrazek[0]-posPad2[0])+(posKrazek[1]-posPad2[1])*(posKrazek[1]-posPad2[1]));
-	if(distance1<=0.028 || distance2<=0.028) // suma promieni krazka i pada to 0.3, ale dla takiego ustawienia jakby wczeœniej reaguje
-		licznik1++;
+	dReal distance1=sqrt(pow(posKrazek[0]-posPad1[0],2)+pow(posKrazek[2]-posPad1[2],2));
+	
+	dReal distance2=sqrt(pow(posKrazek[0]-posPad2[0],2)+pow(posKrazek[2]-posPad2[2],2));
+	sprintf(wynik, "Pad1-krazek: %f", distance2);
+	drawText(1.2, 1.0, -4.5, wynik, 1.0, 1.0, 1.0);
+	if(distance1<=0.03) // suma promieni krazka i pada to 0.3
+		{
+			if(flaga1)
+			{
+				licznik1++;
+				flaga1=false;
+			}
+		}
+	else
+		flaga1=true;
+	if(distance2<=0.03) // suma promieni krazka i pada to 0.3
+		{
+			if(flaga2)
+			{
+				licznik2++;
+				flaga2=false;
+			}
+		}
+	else
+		flaga2=true;
+	sprintf(wynik, "Odbicia krazka");
+	drawText(-0.25, 2.2, -4.5, wynik, 1.0, 1.0, 1.0);
+	sprintf(wynik, "%d : %d", licznik1, licznik2);
+	drawText(-0.25, 1.9, -4.5, wynik, 1.0, 1.0, 1.0);
 	//-------------------------------------------------------------------
 }
 void COdeWorld::InitODE()
@@ -163,9 +201,6 @@ void COdeWorld::InitODE()
 	dMass m;//masa
 	dMatrix3 R;//macierz rotacji
 	double mass=DENSITY * 10;
-	licznik1=0;
-	licznik2=2;
-	
 	//inicjalizacja obiektow znajdujacych sie w swiecie
 	
 	//----- podstawa
@@ -265,17 +300,6 @@ void COdeWorld::InitODE()
     dJointSetHingeParam(Joints[3], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints[3], dParamHiStop, 0);//ruchu
 	
-	//sfera ---- kulka zamiast kr¹¿ka
-	Object[5].Body = dBodyCreate(World);
-	dBodySetPosition(Object[5].Body, -0.1, 0.08, 0.1);
-	dBodySetLinearVel(Object[5].Body, 0, 0, 0);
-	dRFromAxisAndAngle(R, 1, 0, 1, 1);
-	dBodySetRotation(Object[5].Body, R);
-	dMassSetSphere(&m, mass/10, 0.05);
-	Object[5].Geom[0] = dCreateSphere(Space, 0.01);
-	dGeomSetBody(Object[5].Geom[0], Object[5].Body);
-	dBodySetMass(Object[5].Body, &m);
-
 	// krazek
 	radius=0.01;
 	length=0.005;

@@ -2,7 +2,6 @@
 
 #include <gl\glut.h> // glut.h includes gl.h and glu.h
 #include <ode/ode.h> // ode library header
-//#include <src/ccd/ccd.h>
 #include "matrix.h"
 #include "Ground.h"
 #include "OdeGeom.h"
@@ -45,12 +44,16 @@ public:
 	dGeomID plane; //ground in ode
 	COdeGeom geometry; //klasa rysujaca obiekty na scenie
 
-	int licznik1, licznik2;
 	char wynik[20];
 	int size;
 	int dx[3], dy[3], dz[3]; // sfera
-
-
+	// --------- test kolizji ----------
+	
+	int licznik1, licznik2;
+	int golLicznik;
+	bool flaga1;
+	bool flaga2;
+	//----------------------------------
 	dJointID Joints[10];
 	dJointID Joints2[10];
 	dJointID Joints_bramka[5];
