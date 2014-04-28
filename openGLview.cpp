@@ -80,9 +80,9 @@ void openGLview::rysuj_figury(void)
 	dynamicWorld.SimStep(0.0001);
 }
 
-void openGLview::drawText(int x, int y, char *string) // rysuje napis "string" w pozycji x, y
+void openGLview::drawText(float x, float y, float z, char *string) // rysuje napis "string" w pozycji x, y
 {
-	glRasterPos2f(x, y);//pozycja napisu
+	glRasterPos3f(x, y, z);//pozycja napisu
 	for (int i = 0; i < strlen (string); i++)//literka po literce
 	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
 };

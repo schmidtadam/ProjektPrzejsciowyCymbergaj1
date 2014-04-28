@@ -29,6 +29,8 @@ public:
 	void CloseODE();/// zamkniecie ODE
 	void DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red, float green, float blue);//rysuje figury na scenie
 	void setServo(int servo_nr, double value);
+	void drawText(float x, float y, float z, char *string, float red, float green, float blue);//tekst
+
 	MATRIX GeomMatrix;
 	// dynamics and collision objects
 	dSpaceID Space; // collision space
@@ -43,8 +45,11 @@ public:
 	dGeomID plane; //ground in ode
 	COdeGeom geometry; //klasa rysujaca obiekty na scenie
 
+	int licznik1, licznik2;
+	char wynik[20];
 	int size;
 	int dx[3], dy[3], dz[3]; // sfera
+
 
 	dJointID Joints[10];
 	dJointID Joints2[10];

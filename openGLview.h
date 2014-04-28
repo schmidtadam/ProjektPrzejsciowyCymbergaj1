@@ -21,5 +21,5 @@ public:
 
 	void keyboard(unsigned char key, int x, int y);
 	void animacja(void);
-	void drawText(int x, int y, char *string);
+	void drawText(float x, float y, float z, char *string);
 };

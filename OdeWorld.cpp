@@ -95,6 +95,8 @@ void COdeWorld::SimStep(double dt)
 	DrawGeom(bramka[0].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 1 (blekitne)
 	DrawGeom(bramka[1].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 2
 	ground.DrawGrid(); //rysuje ziemie
+	sprintf(wynik, "%d : %d", licznik1, licznik2);
+	drawText(-0.25, 1.0, -4.5, wynik, 1.0, 1.0, 1.0);
 
 	//----------- sterowanie obiektami ---------------------
 	if(dx[0] || dy[0] || dz[0] !=0)
@@ -137,8 +139,8 @@ void COdeWorld::SimStep(double dt)
 	dBodyCopyPosition (pady[2].Body, posPad2);
 	dReal distance1=sqrt((posKrazek[0]-posPad1[0])*(posKrazek[0]-posPad1[0])+(posKrazek[1]-posPad1[1])*(posKrazek[1]-posPad1[1]));
 	dReal distance2=sqrt((posKrazek[0]-posPad2[0])*(posKrazek[0]-posPad2[0])+(posKrazek[1]-posPad2[1])*(posKrazek[1]-posPad2[1]));
-	//if(distance1<=0.028 || distance2<=0.028) // suma promieni krazka i pada to 0.3, ale dla takiego ustawienia jakby wczeœniej reaguje
-	//	exit(0);
+	if(distance1<=0.028 || distance2<=0.028) // suma promieni krazka i pada to 0.3, ale dla takiego ustawienia jakby wczeœniej reaguje
+		licznik1++;
 	//-------------------------------------------------------------------
 }
 void COdeWorld::InitODE()
@@ -161,6 +163,9 @@ void COdeWorld::InitODE()
 	dMass m;//masa
 	dMatrix3 R;//macierz rotacji
 	double mass=DENSITY * 10;
+	licznik1=0;
+	licznik2=2;
+	
 	//inicjalizacja obiektow znajdujacych sie w swiecie
 	
 	//----- podstawa
@@ -363,7 +368,7 @@ void COdeWorld::InitODE()
 	sides[0] = 0.13;//ustalane sa wymiary bramki
 	sides[1] = bandy_h;
 	sides[2] = 0.001;
-	dBodySetPosition(bramka[0].Body, 0.0, 0.06, 0.38); // ustawienie pozycji
+	dBodySetPosition(bramka[0].Body, 0.0, 0.06, 0.379); // ustawienie pozycji
 	dBodySetLinearVel(bramka[0].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
 	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
 	dBodySetRotation(bramka[0].Body, R);
@@ -376,7 +381,7 @@ void COdeWorld::InitODE()
 	sides[0] = 0.13;//ustalane sa wymiary bramki
 	sides[1] = bandy_h;
 	sides[2] = 0.001;
-	dBodySetPosition(bramka[1].Body, 0.0, 0.06, -0.38); // ustawienie pozycji
+	dBodySetPosition(bramka[1].Body, 0.0, 0.06, -0.379); // ustawienie pozycji
 	dBodySetLinearVel(bramka[1].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
 	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
 	dBodySetRotation(bramka[1].Body, R);
@@ -407,6 +412,18 @@ void COdeWorld::CloseODE()
 	dJointGroupDestroy(contactgroup);
 	dSpaceDestroy(Space);
 	dWorldDestroy(World);
+}
+
+void COdeWorld::drawText(float x, float y, float z, char *string, float red, float green, float blue) // rysuje napis "string" w pozycji x, y, z
+{
+	float kolor[3];
+	kolor[0]=red;
+	kolor[1]=green;
+	kolor[2]=blue;
+	glColor3fv( kolor );
+	glRasterPos3f(x, y, z);//pozycja napisu
+	for (int i = 0; i < strlen (string); i++)//literka po literce
+	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
 }
 
 void COdeWorld::setServo(int servo_nr, double value) {
