@@ -44,19 +44,24 @@ public:
 	dGeomID plane; //ground in ode
 	COdeGeom geometry; //klasa rysujaca obiekty na scenie
 
-	char wynik[20];
+	dGeomID *mojeDane[3];
+
+	dVector3 posStol[5]; // pozycje elementow stolu
+
+	char wynik[20]; // tablica znakow do wyswietlania wynikow
 	int size;
 	int dx[3], dy[3], dz[3]; // sfera
 	// --------- test kolizji ----------
 	
 	int licznik1, licznik2;
-	int golLicznik;
-	bool flaga1;
+	int golLicznik, golLicznik2;
+	bool flaga1; // zeby pozycje styczna liczyl jako jedno odbicie
 	bool flaga2;
+	
 	//----------------------------------
 	dJointID Joints[10];
 	dJointID Joints2[10];
 	dJointID Joints_bramka[5];
 	float ster[5];
-	int pom; // zmienna iteruj¹ca obiegi pêtli glownej
+	int petla; // zmienna iteruj¹ca obiegi pêtli glownej
 };
