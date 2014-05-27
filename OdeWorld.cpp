@@ -105,6 +105,9 @@ COdeWorld::COdeWorld(void)
 	golLicznik2=0;
 	sila=0;
 	predkoscCz[3]=1;
+	predkoscZiel[3]=1;
+	srand(time(0));				//punkt poczatkowy losowania
+	
 }
 COdeWorld::~COdeWorld(void)
 {
@@ -145,7 +148,7 @@ void COdeWorld::funkcja_komputerowa(float x1, float x2)
 	//dBodySetPosition(pady[3].Body, 0, 0.07, -0.25);	//ustawienie pozycji pada2
 }
 //*********************************DLL***************************************
-void COdeWorld::odczyt_dll(float x1, float x2, float force)
+void COdeWorld::odczyt_dll()
 {
 	HINSTANCE hDll;
 	hDll = LoadLibrary("VSDLL.dll" );
@@ -158,10 +161,9 @@ void COdeWorld::odczyt_dll(float x1, float x2, float force)
 		PROCRunAtak FunkcjaAtak = (PROCRunAtak)GetProcAddress(hDll, "funkcjaAtak");
 		if( FunkcjaOdczytu != NULL )
 		{
-			force =FunkcjaOdczytu( x1, x2, force);
-			sila=force;
-			dBodySetLinearVel(pady[2].Body, force, 0, 0);
-			dBodySetLinearVel(pady[3].Body, force, 0, 0);
+			FunkcjaOdczytu(posKrazek, posPad2, KraVel, PadVel2, predkoscZiel);
+			dBodySetLinearVel(pady[2].Body, predkoscZiel[0], predkoscZiel[1], predkoscZiel[2]);
+			dBodySetLinearVel(pady[3].Body, predkoscZiel[0], predkoscZiel[1], predkoscZiel[2]);
 			
 		}
 		else
@@ -307,8 +309,8 @@ void COdeWorld::funkcja_ustawiajaca()
 {
 	dBodySetPosition(pady[0].Body, 0, 0.055, 0.25);	//ustawienie pozycji pada1
 	dBodySetPosition(pady[1].Body, 0, 0.07, 0.25);  //ustawienie pozycji pada1
-	dBodySetPosition(pady[2].Body, 0, 0.055, -0.25);//ustawienie pozycji pada2
-	dBodySetPosition(pady[3].Body, 0, 0.07, -0.25);	//ustawienie pozycji pada2
+	dBodySetPosition(pady[2].Body, 0, 0.055, -0.35);//ustawienie pozycji pada2
+	dBodySetPosition(pady[3].Body, 0, 0.07, -0.35);	//ustawienie pozycji pada2
 	dBodySetLinearVel(pady[0].Body, 0, 0, 0);		//predkosci=0
 	dBodySetLinearVel(pady[1].Body, 0, 0, 0);
 	dBodySetLinearVel(pady[2].Body, 0, 0, 0);
@@ -348,6 +350,7 @@ void COdeWorld::DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red,
 // Simulation step
 void COdeWorld::SimStep(double dt)
 {
+	
 	dSpaceCollide(Space, (void*)(&mD), &nearCallback);//ustawia sprawdzanie kolizji
 	dWorldQuickStep(World, dt); //wykonuje krok symulacji
 	dJointGroupEmpty(contactgroup);
@@ -398,16 +401,20 @@ void COdeWorld::SimStep(double dt)
 	// --------------- sprawdzanie i liczenie goli -------------------
 	if(mD.trafienie1==true)
 	{
+		float liczba = float (rand()%21-10);				//losowanie pozycji krazka
+		liczba=liczba/1000;
 		golLicznik++;
-		dBodySetPosition(krazek.Body, 0, 0.052, 0.2);
+		dBodySetPosition(krazek.Body, liczba, 0.052, 0.2);
 		dBodySetLinearVel(krazek.Body, 0, 0, 0);
 		funkcja_ustawiajaca();
 		mD.trafienie1=false;
 	}
 	if(mD.trafienie2==true)
 	{
+		float liczba = float (rand()%21-10);				//losowanie pozycji krazka
+		liczba=liczba/1000;
 		golLicznik2++;
-		dBodySetPosition(krazek.Body, 0, 0.052, -0.2);
+		dBodySetPosition(krazek.Body, liczba, 0.052, -0.27);
 		dBodySetLinearVel(krazek.Body, 0, 0, 0);
 		funkcja_ustawiajaca();
 		mD.trafienie2=false;
@@ -426,8 +433,13 @@ void COdeWorld::SimStep(double dt)
 	PadVel[0]=Pad1Vel[0];
 	PadVel[1]=Pad1Vel[1];
 	PadVel[2]=Pad1Vel[2];
+	PadVel2[0]=Pad2Vel[0];
+	PadVel2[1]=Pad2Vel[1];
+	PadVel2[2]=Pad2Vel[2];
 	// - - - - - - - - - - -
 	PadVel[3]=predkoscCz[3]; // indeks "3" pelni role wartosci logicznej czy atakowac
+	PadVel2[3]=predkoscZiel[3]; // indeks "3" pelni role wartosci logicznej czy atakowac
+			//predkoscZiel[0]=Pad2Vel[0];
 	
 	//funkcja_komputerowa2(posKrazek, posPad1, KraVel, PadVel, wsk);
 	
@@ -435,7 +447,7 @@ void COdeWorld::SimStep(double dt)
 	drawText(0, 3, -4.5, wynik, 1.0, 1.0, 1.0);
 
 	if(petla==400)
-		odczyt_dll(posKrazek[0], posPAD2[0], sila); // wywolanie odczytu DLL i wraz z nim sterowania komputerowego
+		odczyt_dll(); // wywolanie odczytu DLL i wraz z nim sterowania komputerowego
 	
 	//----------- sterowanie obiektami ---------------------
 	if(dx[1] || dz[1] !=0)
@@ -457,9 +469,11 @@ void COdeWorld::SimStep(double dt)
 	{
 		dBodySetPosition(pady[0].Body, 0, 0.07, 0.25);	//ustawienie pocz¹tkowe pada1
 		dBodySetPosition(pady[1].Body, 0, 0.07, 0.265);	//ustawienie pocz¹tkowe pada1
-		dBodySetPosition(pady[2].Body, 0, 0.07, -0.25);	//ustawienie pocz¹tkowe pada2
-		dBodySetPosition(pady[3].Body, 0, 0.07, -0.235); //ustawienie pocz¹tkowe pada2
-		dBodySetPosition(krazek.Body, 0.02, 0.063, 0.2); // krazek
+		dBodySetPosition(pady[2].Body, 0, 0.07, -0.35);	//ustawienie pocz¹tkowe pada2
+		dBodySetPosition(pady[3].Body, 0, 0.07, -0.35); //ustawienie pocz¹tkowe pada2
+		float liczba = float (rand()%21-10);							//losowanie pozycji krazka
+		liczba=liczba/1000;
+		dBodySetPosition(krazek.Body, liczba, 0.063, 0.2); // krazek
 	}
 	if(petla==400)
 	{

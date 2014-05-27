@@ -1,13 +1,18 @@
 #pragma once
 
+#include <conio.h>
+#include <Windows.h>
+#include <stdio.h>
+#include <ctime>
+
 #include <gl\glut.h> // glut.h includes gl.h and glu.h
 #include <ode/ode.h> // ode library header
 #include "matrix.h"
 #include "Ground.h"
 #include "OdeGeom.h"
 
-typedef float (*PROCRunThisModule)(float x1, float x2, float sila);
-extern "C" float funkcja_komputerowa(float x1, float x2, float sila);
+typedef void (*PROCRunThisModule)(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
+extern "C" void funkcja_komputerowa(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
 
 typedef void (*PROCRunAtak)(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
 extern "C" void funkcjaAtak(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
@@ -36,7 +41,7 @@ public:
 	void setServo(int servo_nr, double value);
 	void drawText(float x, float y, float z, char *string, float red, float green, float blue);//tekst
 	void funkcja_komputerowa(float x1, float x2);
-	void odczyt_dll(float x1, float x2, float force);
+	void odczyt_dll();
 	void funkcja_komputerowa2(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
 	void funkcja_ustawiajaca();
 
@@ -79,6 +84,7 @@ public:
 	const dReal *Pad1Vel; //predkosci padow
 	float PadVel[4];
 	const dReal *Pad2Vel;
+	float PadVel2[4];
 	const dReal *Pad1Ang; //predkosci katowe padow
 	const dReal *Pad2Ang;
 	const dReal *KrazekVel; //predkosc krazka
@@ -86,6 +92,7 @@ public:
 	const dReal *KrazekAng; //predkosc katowa krazka
 	float* wsk;
 	float predkoscCz[4];
+	float predkoscZiel[4];
 	//-----------------------------------------------------------------------------------
 	char wynik[20]; // tablica znakow do wyswietlania wynikow
 	int size;

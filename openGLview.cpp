@@ -10,6 +10,10 @@ openGLview::openGLview(void)
 	dynamicWorld.size=2;
 	selected_id=0;
 	nadawanaSila=5;
+	gluLookAt( // ustawienie pocz¹tkowe kamery
+	0.0, 350.0, 0.0,
+	0.0, 0.0, 0.0,
+	0.0, 0.0, 1.0);
 }
 
 
