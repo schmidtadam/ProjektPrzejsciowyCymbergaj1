@@ -35,8 +35,6 @@ public:
 	void odczyt_dll(float x1, float x2, float force);
 	void funkcja_ustawiajaca();
 
-
-
 	MATRIX GeomMatrix;
 	// dynamics and collision objects
 	dSpaceID Space; // collision space
@@ -66,6 +64,7 @@ public:
 
 	dVector3 posStol[5]; // pozycje elementow stolu
 	dVector3 posKrazek;
+	dVector3 posPAD2;
 
 	char wynik[20]; // tablica znakow do wyswietlania wynikow
 	int size;

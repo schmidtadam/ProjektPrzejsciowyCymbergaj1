@@ -127,7 +127,9 @@ void openGLview::loadTextureFromFile(char *filename)
 
 void openGLview::rysuj_figury(void)
 {
+	
 	dynamicWorld.SimStep(0.0001);
+	dynamicWorld.odczyt_dll(dynamicWorld.posKrazek[0], dynamicWorld.posKrazek[0], dynamicWorld.posPAD2[0]);
 }
 
 void openGLview::drawText(float x, float y, float z, char *string) // rysuje napis "string" w pozycji x, y
