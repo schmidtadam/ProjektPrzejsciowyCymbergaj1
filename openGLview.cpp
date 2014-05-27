@@ -9,8 +9,7 @@ openGLview::openGLview(void)
 	dynamicWorld.InitODE(); //inicjalizacja srodowiska ode
 	dynamicWorld.size=2;
 	selected_id=0;
-	znak_poziom=0;
-	znak_pion=0;
+	nadawanaSila=5;
 }
 
 
@@ -22,65 +21,53 @@ void openGLview::keyboard(unsigned char key, int x, int y)// metoda w zaleÂżno
 {
 	if (key == 27) exit(0); // escape key is ascii 27 }
 	if (key == 100) { //key d prawo 
-		if(znak_poziom<0)
-		{
-			if(selected_id==1){
+		if(selected_id==1 && dynamicWorld.Pad1Vel[0]<0){
 			dBodySetLinearVel(dynamicWorld.pady[0].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
 			dBodySetLinearVel(dynamicWorld.pady[1].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
-			}
-			if(selected_id==2){
-			dBodySetLinearVel(dynamicWorld.pady[2].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
-			dBodySetLinearVel(dynamicWorld.pady[3].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
-			}
-			znak_poziom=1;
 		}
-		dynamicWorld.dx[selected_id]=5; }
-	if (key == 97) { //key a lewo
-		if(znak_poziom>=0)
-		{
-			if(selected_id==1){
-			dBodySetLinearVel(dynamicWorld.pady[0].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
-			dBodySetLinearVel(dynamicWorld.pady[1].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
-			}
-			if(selected_id==2){
+		if(selected_id==2 && dynamicWorld.Pad2Vel[0]<0){
 			dBodySetLinearVel(dynamicWorld.pady[2].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
 			dBodySetLinearVel(dynamicWorld.pady[3].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
-			}
-			znak_poziom=-1;
-		}		
-		dynamicWorld.dx[selected_id]=-5; }
+		}
+		dynamicWorld.dx[selected_id]=nadawanaSila;
+	}
+	if (key == 97) { //key a lewo
+		if(selected_id==1 && dynamicWorld.Pad1Vel[0]>0){
+			dBodySetLinearVel(dynamicWorld.pady[0].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
+			dBodySetLinearVel(dynamicWorld.pady[1].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
+		}
+		if(selected_id==2 && dynamicWorld.Pad2Vel[0]>0){
+			dBodySetLinearVel(dynamicWorld.pady[2].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
+			dBodySetLinearVel(dynamicWorld.pady[3].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
+		}
+		dynamicWorld.dx[selected_id]=-nadawanaSila; 
+	}
 	if (key == 101) { //key e góra 
 	dynamicWorld.dy[selected_id]=5; }
 	if (key == 113) { //key q dół
 	dynamicWorld.dy[selected_id]=-5; }
 	if (key == 115) { //key s do siebie
-		if(znak_pion>=0)
-		{
-			if(selected_id==1){
+		if(selected_id==1 && dynamicWorld.Pad1Vel[2]<0){
 			dBodySetLinearVel(dynamicWorld.pady[0].Body, dynamicWorld.Pad1Vel[0], 0, 0);
 			dBodySetLinearVel(dynamicWorld.pady[1].Body, dynamicWorld.Pad1Vel[0], 0, 0);
-			}
-			if(selected_id==2){
+		}
+		if(selected_id==2 && dynamicWorld.Pad2Vel[2]<0){
 			dBodySetLinearVel(dynamicWorld.pady[2].Body, dynamicWorld.Pad2Vel[0], 0, 0);
 			dBodySetLinearVel(dynamicWorld.pady[3].Body, dynamicWorld.Pad2Vel[0], 0, 0);
-			}
-			znak_pion=-1;
 		}
-	dynamicWorld.dz[selected_id]=5; }
+	dynamicWorld.dz[selected_id]=nadawanaSila; 
+	}
 	if (key == 119) { //key w w głąb
-		if(znak_pion<0)
-		{
-			if(selected_id==1){
+		if(selected_id==1 && dynamicWorld.Pad1Vel[2]>0){
 			dBodySetLinearVel(dynamicWorld.pady[0].Body, dynamicWorld.Pad1Vel[0], 0, 0);
 			dBodySetLinearVel(dynamicWorld.pady[1].Body, dynamicWorld.Pad1Vel[0], 0, 0);
-			}
-			if(selected_id==2){
+		}
+		if(selected_id==2 && dynamicWorld.Pad2Vel[2]>0){
 			dBodySetLinearVel(dynamicWorld.pady[2].Body, dynamicWorld.Pad2Vel[0], 0, 0);
 			dBodySetLinearVel(dynamicWorld.pady[3].Body, dynamicWorld.Pad2Vel[0], 0, 0);
-			}
-			znak_pion=1;
 		}
-	dynamicWorld.dz[selected_id]=-5; }
+	dynamicWorld.dz[selected_id]=-nadawanaSila;
+	}
 }
 
 void openGLview::animacja(void) //funkcjê odpowiedzialna za zmiane pozycji i orientacji wszystkich figur na scenie
@@ -129,7 +116,6 @@ void openGLview::rysuj_figury(void)
 {
 	
 	dynamicWorld.SimStep(0.0001);
-	dynamicWorld.odczyt_dll(dynamicWorld.posKrazek[0], dynamicWorld.posKrazek[0], dynamicWorld.posPAD2[0]);
 }
 
 void openGLview::drawText(float x, float y, float z, char *string) // rysuje napis "string" w pozycji x, y

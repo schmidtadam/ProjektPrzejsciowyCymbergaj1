@@ -22,7 +22,5 @@ public:
 	void keyboard(unsigned char key, int x, int y);
 	void animacja(void);
 	void drawText(float x, float y, float z, char *string);
-
-	int znak_pion;				//zmienna okreslajaca w ktorym kierunku jedzie pad (gora czy dol)
-	int znak_poziom;			//zmienna okreslajaca w ktorym kierunku jedzie pad (lewo czy prawo)
+	int nadawanaSila; // sila nadawana padom
 };

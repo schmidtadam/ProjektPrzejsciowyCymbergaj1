@@ -31,12 +31,12 @@ public:
 	void DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red, float green, float blue);//rysuje figury na scenie
 	void setServo(int servo_nr, double value);
 	void drawText(float x, float y, float z, char *string, float red, float green, float blue);//tekst
-	void funkcja_komputerowa(float x1, float x1_stare, float x2);
+	void funkcja_komputerowa(float x1, float x2);
 	void odczyt_dll(float x1, float x2, float force);
 	void funkcja_ustawiajaca();
 
 	MATRIX GeomMatrix;
-	// dynamics and collision objects
+	// -------- dynamics and collision objects ----------
 	dSpaceID Space; // collision space
 	dSpaceID Space2; // collision space
 	dJointGroupID jointgroup; // contact group for the new joint
@@ -45,11 +45,12 @@ public:
 	MyObject krazek;
 	MyObject bramka[2];
 	MyObject pady[4];
+	MyObject naroznik[4];
 	CGround ground; //ziemia
 	dGeomID plane; //ground in ode
 	COdeGeom geometry; //klasa rysujaca obiekty na scenie
 
-	/*dGeomID mojeDane[5];*/
+	// ------------ struktura przekazywana do funkcji nearCallback --------
 	struct mD
 	{
 		dGeomID krazek;
@@ -61,20 +62,28 @@ public:
 		bool trafienie1;
 		bool trafienie2;
 	}mD;
-
+	// ------------- pobrane wartosci (pozycja, predkosc, pr. obrotowa) -----------------
 	dVector3 posStol[5]; // pozycje elementow stolu
+	dVector3 posNaroznik[4];
 	dVector3 posKrazek;
+	dVector3 posPad1;
+	dVector3 posPad2;
 	dVector3 posPAD2;
 
+	const dReal *Pad1Vel; //predkosci padow
+	const dReal *Pad2Vel;
+	const dReal *Pad1Ang; //predkosci katowe padow
+	const dReal *Pad2Ang;
+	const dReal *KrazekVel; //predkosc krazka
+	const dReal *KrazekAng; //predkosc katowa krazka
+	//-----------------------------------------------------------------------------------
 	char wynik[20]; // tablica znakow do wyswietlania wynikow
 	int size;
 	float dx[3], dy[3], dz[3]; // przyrost sily
 	float sila;			// zmienna do sterowania komputerowego
-	float stare_x;		// zmienna do sterowania komputerowego
-	// --------- test kolizji ----------
-	
-	int licznik1, licznik2;
-	int golLicznik, golLicznik2;
+	// --------- kolizje - liczniki ----------
+	int licznik1, licznik2; // liczniki odbic krazka przez pady
+	int golLicznik, golLicznik2; // liczniki goli
 	bool flaga1; // zeby pozycje styczna liczyl jako jedno odbicie
 	bool flaga2;
 	
@@ -82,9 +91,6 @@ public:
 	dJointID Joints[10];
 	dJointID Joints2[10];
 	dJointID Joints_bramka[5];
-	float ster[5];
+	dJointID Joints_naroznik[4];
 	int petla; // zmienna iteruj¹ca obiegi pêtli glownej
-	
-	const dReal *Pad1Vel;
-	const dReal *Pad2Vel;
 };

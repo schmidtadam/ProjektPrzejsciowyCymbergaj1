@@ -104,7 +104,6 @@ COdeWorld::COdeWorld(void)
 	golLicznik=0;
 	golLicznik2=0;
 	sila=0;
-	stare_x=0;
 }
 COdeWorld::~COdeWorld(void)
 {
@@ -113,11 +112,11 @@ COdeWorld::~COdeWorld(void)
 	dSpaceDestroy(Space);
 	dWorldDestroy(World);
 }
-void COdeWorld::funkcja_komputerowa(float x1, float x1_stare, float x2)
+void COdeWorld::funkcja_komputerowa(float x1, float x2)
 {
-	if(abs(x1-x2)>0.015 )//&& abs(x1-x2)<0.034)
+	if(abs(x1-x2)>0.015 )
 	{
-		if(x1>x2)//-x1_stare>0)
+		if(x1>x2)
 		{
 			if(sila<0.5)
 			{
@@ -127,7 +126,7 @@ void COdeWorld::funkcja_komputerowa(float x1, float x1_stare, float x2)
 			else
 				sila=0;
 		}
-		if(x1<x2)//-x1_stare<0)
+		if(x1<x2)
 		{
 			if(sila>-0.5)
 			{
@@ -159,7 +158,12 @@ void COdeWorld::odczyt_dll(float x1, float x2, float force)
     if( FunkcjaOdczytu != NULL )
     {
         force =FunkcjaOdczytu( x1, x2, force );
-        dx[2]=force;
+		dBodySetLinearVel(pady[2].Body, force, 0, 0);
+		dBodySetLinearVel(pady[3].Body, force, 0, 0);
+		sila=force;
+        //dBodySetLinearVel(pady[2].Body, force, Pad2Vel[1], Pad2Vel[2]);
+		//dBodySetLinearVel(pady[3].Body, force, Pad2Vel[1], Pad2Vel[2]);
+		//dx[2]=force;
     }
 	else
 		drawText(-3.5, 1.6, -4.5, "BLAD", 1.0, 1.0, 1.0);
@@ -234,26 +238,33 @@ void COdeWorld::SimStep(double dt)
 	DrawGeom(krazek.Geom[0], 0, 0, 0, 0, 1); //rysuje krazek
 	DrawGeom(bramka[0].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 1 (blekitne)
 	DrawGeom(bramka[1].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 2
+	// --------- do usuniecia po przetestowaniu naroznikow --------------
+	DrawGeom(naroznik[0].Geom[0], 0, 0, 1, 0, 0);
+	DrawGeom(naroznik[1].Geom[0], 0, 0, 1, 0, 0);
+	DrawGeom(naroznik[2].Geom[0], 0, 0, 1, 0, 0);
+	DrawGeom(naroznik[3].Geom[0], 0, 0, 1, 0, 0);
+	//-------------------------------------------------------------------
 	ground.DrawGrid(); //rysuje ziemie
 
-	// -------- test kolizji ---------------
-	//dVector3 posKrazek;
-	stare_x=posKrazek[0];						//przypisanie starej wartosci x krazka
-	dBodyCopyPosition (krazek.Body, posKrazek); // Pobranie nowej pozycji
-	const dReal *KrazekVel;
-	KrazekVel=dBodyGetLinearVel (krazek.Body); // Pobranie pr. liniowej
-	const dReal *KrazekAng;
-	KrazekAng=dBodyGetAngularVel (krazek.Body); // Pobranie pr. obrotowej
-	const dReal *Pad1Ang;
-	Pad1Ang=dBodyGetAngularVel (pady[0].Body);
-	const dReal *Pad2Ang;
-	Pad2Ang=dBodyGetAngularVel (pady[2].Body);
+	// -------- Pobieranie danych obiektow ------------
+	dBodyCopyPosition (krazek.Body, posKrazek); // Pobranie nowej pozycji krazka
+	KrazekVel=dBodyGetLinearVel (krazek.Body); // Pobranie pr. liniowej krazka
+	KrazekAng=dBodyGetAngularVel (krazek.Body); // Pobranie pr. obrotowej krazka
+	dBodyCopyPosition (pady[0].Body, posPad1); // Pobranie pozycji pada 1
+	dBodyCopyPosition (pady[2].Body, posPad2); // Pobranie pozycji pada 2
+	Pad1Vel=dBodyGetLinearVel (pady[0].Body); // Pobranie pr. pada 1
+	Pad2Vel=dBodyGetLinearVel (pady[2].Body); // Pobranie pr. pada 2
+	Pad1Ang=dBodyGetAngularVel (pady[0].Body); // Pobranie pr. obrotowej pada 1
+	Pad2Ang=dBodyGetAngularVel (pady[2].Body); // Pobranie pr. obrotowej pada 2
+
+	sprintf(wynik, "Predkosc pada: %.3f", Pad2Vel[0]);
+	drawText(-2.0, 2.5, -4.5, wynik, 1.0, 1.0, 1.0);
 
 	sprintf(wynik, "Pozycja krazka:");
 	drawText(-1.5, 1.6, -4.5, wynik, 1.0, 1.0, 1.0);
 	sprintf(wynik, "x:%.3f y:%.3f z:%.3f", /*Pad1Ang[0], Pad1Ang[1], Pad1Ang[2]*/posKrazek[0], posKrazek[1], posKrazek[2]);
 	drawText(-1.5, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
-	if(mD.trafienie1==true)//posKrazek[2] < -0.368)
+	if(mD.trafienie1==true)
 	{
 		golLicznik++;
 		dBodySetPosition(krazek.Body, 0, 0.052, 0.2);
@@ -274,7 +285,8 @@ void COdeWorld::SimStep(double dt)
 	//-----------wywolanie funkcji komputerowej------------
 	dVector3 posPAD2;
 	dBodyCopyPosition (pady[2].Body, posPAD2); // Pobranie pozycji
-	//funkcja_komputerowa(posKrazek[0], stare_x, posPAD2[0]);
+	//funkcja_komputerowa(posKrazek[0], posPAD2[0]);
+	if(petla>200)
 	odczyt_dll(posKrazek[0], posPAD2[0], sila);
 	//----------- sterowanie obiektami ---------------------
 	if(dx[1] || dz[1] !=0)
@@ -287,17 +299,7 @@ void COdeWorld::SimStep(double dt)
 		dBodySetForce(pady[2].Body, dx[2], 0, dz[2]);
 		dx[2]=0;dz[2]=0;
 	}
-
 	// ----------- Ograniczenia obrotow i pozycji po ustaleniu sie pozycji obiektow -----------
-	
-	Pad1Vel=dBodyGetLinearVel (pady[0].Body);
-	//const dReal *Pad1Ang;
-	//Pad1Ang=dBodyGetAngularVel (pady[0].Body);
-	
-	Pad2Vel=dBodyGetLinearVel (pady[2].Body);
-	//const dReal *Pad2Ang;
-	//Pad2Ang=dBodyGetAngularVel (pady[2].Body);
-
 	if(petla<400)
 	{
 		petla++;
@@ -335,20 +337,20 @@ void COdeWorld::SimStep(double dt)
 		for(int i=0; i<5; i++)
 		{
 			dBodyCopyPosition (Object[i].Body, posStol[i]); // Pobranie poczatkowej pozycji stolu
+			if(i<4)
+				dBodyCopyPosition (naroznik[i].Body, posNaroznik[i]); // Pobranie poczatkowej pozycji naroznikow
 		}
 	}
 	if(petla>20)
 		for(int i=0; i<5; i++)
 		{
 			dBodySetPosition(Object[i].Body, posStol[i][0], posStol[i][1], posStol[i][2]); //zablokowanie POZYCJI stolu, zeby sie nie poruszal
+			if(i<4)
+				dBodySetPosition(naroznik[i].Body, posNaroznik[i][0], posNaroznik[i][1], posNaroznik[i][2]);
 		}
 	// ---------------- obliczanie kolizji z krazekiem ------------------
-	dVector3 posPad1;
-	dBodyCopyPosition (pady[0].Body, posPad1);
-	dVector3 posPad2;
-	dBodyCopyPosition (pady[2].Body, posPad2);
-	dReal distance1=sqrt(pow(posKrazek[0]-posPad1[0],2)+pow(posKrazek[2]-posPad1[2],2));
 	
+	dReal distance1=sqrt(pow(posKrazek[0]-posPad1[0],2)+pow(posKrazek[2]-posPad1[2],2));
 	dReal distance2=sqrt(pow(posKrazek[0]-posPad2[0],2)+pow(posKrazek[2]-posPad2[2],2));
 	sprintf(wynik, "Odleglosc");
 	drawText(1.2, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
@@ -470,7 +472,8 @@ void COdeWorld::InitODE()
 	Object[4].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
 	dGeomSetBody(Object[4].Geom[0], Object[4].Body);//powiazanie wymiarow i masy
 	dBodySetMass(Object[4].Body, &m);
-	//---------------- koniec band -------------------------
+
+	//---------------- Jointy band -------------------------
 	Joints[0] = dJointCreateHinge(World, jointgroup);
     dJointAttach(Joints[0], Object[0].Body, Object[1].Body);
     dJointSetHingeAnchor(Joints[0], 0.19, 0, 0);//pozycja
@@ -498,6 +501,87 @@ void COdeWorld::InitODE()
     dJointSetHingeAxis(Joints[3], 0, 1, 0);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints[3], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints[3], dParamHiStop, 0);//ruchu
+	
+	//------------------ narozniki zeby krazek sie nie blokowal w rogach -------------------------
+	naroznik[0].Body = dBodyCreate(World);//tworzona jest banda przednia
+	sides[0] = 0.005;//ustalane sa wymiary bandy
+	sides[1] = bandy_h;
+	sides[2] = 0.005;
+	dBodySetPosition(naroznik[0].Body, 0.1775, 0.06, 0.3775); // ustawienie pozycji
+	dBodySetLinearVel(naroznik[0].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
+	dBodySetRotation(naroznik[0].Body, R);
+	dMassSetBox(&m, mass*10, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
+	naroznik[0].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(naroznik[0].Geom[0], naroznik[0].Body);//powiazanie wymiarow i masy
+	dBodySetMass(naroznik[0].Body, &m);
+
+	naroznik[1].Body = dBodyCreate(World);//tworzona jest banda przednia
+	sides[0] = 0.005;//ustalane sa wymiary bandy
+	sides[1] = bandy_h;
+	sides[2] = 0.005;
+	dBodySetPosition(naroznik[1].Body, -0.1775, 0.06, 0.3775); // ustawienie pozycji
+	dBodySetLinearVel(naroznik[1].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
+	dBodySetRotation(naroznik[1].Body, R);
+	dMassSetBox(&m, mass*10, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
+	naroznik[1].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(naroznik[1].Geom[0], naroznik[1].Body);//powiazanie wymiarow i masy
+	dBodySetMass(naroznik[1].Body, &m);
+
+	naroznik[2].Body = dBodyCreate(World);//tworzona jest banda przednia
+	sides[0] = 0.005;//ustalane sa wymiary bandy
+	sides[1] = bandy_h;
+	sides[2] = 0.005;
+	dBodySetPosition(naroznik[2].Body, -0.1775, 0.06, -0.3775); // ustawienie pozycji
+	dBodySetLinearVel(naroznik[2].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
+	dBodySetRotation(naroznik[2].Body, R);
+	dMassSetBox(&m, mass*10, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
+	naroznik[2].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(naroznik[2].Geom[0], naroznik[2].Body);//powiazanie wymiarow i masy
+	dBodySetMass(naroznik[2].Body, &m);
+
+	naroznik[3].Body = dBodyCreate(World);//tworzona jest banda przednia
+	sides[0] = 0.005;//ustalane sa wymiary bandy
+	sides[1] = bandy_h;
+	sides[2] = 0.005;
+	dBodySetPosition(naroznik[3].Body, 0.1775, 0.06, -0.3775); // ustawienie pozycji
+	dBodySetLinearVel(naroznik[3].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
+	dBodySetRotation(naroznik[3].Body, R);
+	dMassSetBox(&m, mass*10, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
+	naroznik[3].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(naroznik[3].Geom[0], naroznik[3].Body);//powiazanie wymiarow i masy
+	dBodySetMass(naroznik[3].Body, &m);
+
+	Joints_naroznik[0] = dJointCreateHinge(World, jointgroup);
+    dJointAttach(Joints_naroznik[0], Object[0].Body, naroznik[0].Body);
+    dJointSetHingeAnchor(Joints_naroznik[0], 0.1775, 0.3775, 0);//pozycja
+    dJointSetHingeAxis(Joints_naroznik[0], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
+    dJointSetHingeParam(Joints_naroznik[0], dParamLoStop, 0);//mozliwy zakres 
+    dJointSetHingeParam(Joints_naroznik[0], dParamHiStop, 0);//ruchu
+
+	Joints_naroznik[1] = dJointCreateHinge(World, jointgroup);
+    dJointAttach(Joints_naroznik[1], Object[0].Body, naroznik[1].Body);
+    dJointSetHingeAnchor(Joints_naroznik[1], -0.1775, 0.3775, 0);//pozycja
+    dJointSetHingeAxis(Joints_naroznik[1], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
+    dJointSetHingeParam(Joints_naroznik[1], dParamLoStop, 0);//mozliwy zakres 
+    dJointSetHingeParam(Joints_naroznik[1], dParamHiStop, 0);//ruchu
+
+	Joints_naroznik[2] = dJointCreateHinge(World, jointgroup);
+    dJointAttach(Joints_naroznik[2], Object[0].Body, naroznik[2].Body);
+    dJointSetHingeAnchor(Joints_naroznik[2], -0.1775, -0.3775, 0);//pozycja
+    dJointSetHingeAxis(Joints_naroznik[2], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
+    dJointSetHingeParam(Joints_naroznik[2], dParamLoStop, 0);//mozliwy zakres 
+    dJointSetHingeParam(Joints_naroznik[2], dParamHiStop, 0);//ruchu
+
+	Joints_naroznik[3] = dJointCreateHinge(World, jointgroup);
+    dJointAttach(Joints_naroznik[3], Object[0].Body, naroznik[3].Body);
+    dJointSetHingeAnchor(Joints_naroznik[3], 0.1775, -0.3775, 0);//pozycja
+    dJointSetHingeAxis(Joints_naroznik[3], 0, 1, 0);//os wzdluz ktorej prowadzi zlacze
+    dJointSetHingeParam(Joints_naroznik[3], dParamLoStop, 0);//mozliwy zakres 
+    dJointSetHingeParam(Joints_naroznik[3], dParamHiStop, 0);//ruchu
 	
 	// krazek
 	radius=0.01;
@@ -625,13 +709,6 @@ void COdeWorld::InitODE()
     dJointSetHingeAxis(Joints_bramka[1], 0, 1, 0);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints_bramka[1], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints_bramka[1], dParamHiStop, 0);//ruchu
-
-	//mojeDane[0]=krazek.Geom[0];
-	//mojeDane[1]=pady[0].Geom[0];
-	//mojeDane[2]=pady[2].Geom[0];
-	//mojeDane[3]=Object[0].Geom[0]; // spod boiska
-	//mojeDane[4]=krazek.Geom[0];
-	//posKrazek[0]=0;
 
 	mD.krazek=krazek.Geom[0];
 	mD.boisko=Object[0].Geom[0];
