@@ -6,6 +6,8 @@
 #include "Ground.h"
 #include "OdeGeom.h"
 
+typedef float (*PROCRunThisModule)(float x1, float x2, float sila);
+extern "C" float funkcja_komputerowa(float x1, float x2, float sila);
 // some constants
 #define DENSITY (0.5) // density of all objects
 #define GEOMSPERBODY 1 // maximum number of geometries per body
@@ -29,6 +31,11 @@ public:
 	void DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red, float green, float blue);//rysuje figury na scenie
 	void setServo(int servo_nr, double value);
 	void drawText(float x, float y, float z, char *string, float red, float green, float blue);//tekst
+	void funkcja_komputerowa(float x1, float x1_stare, float x2);
+	void odczyt_dll(float x1, float x2, float force);
+	void funkcja_ustawiajaca();
+
+
 
 	MATRIX GeomMatrix;
 	// dynamics and collision objects
@@ -36,7 +43,7 @@ public:
 	dSpaceID Space2; // collision space
 	dJointGroupID jointgroup; // contact group for the new joint
 	dJointID Joint; // the joint ID
-	MyObject Object[15]; // tablica z obiektami które wystepuja na scenie
+	MyObject Object[5]; // tablica z obiektami które wystepuja na scenie
 	MyObject krazek;
 	MyObject bramka[2];
 	MyObject pady[4];
@@ -44,13 +51,27 @@ public:
 	dGeomID plane; //ground in ode
 	COdeGeom geometry; //klasa rysujaca obiekty na scenie
 
-	dGeomID *mojeDane[3];
+	/*dGeomID mojeDane[5];*/
+	struct mD
+	{
+		dGeomID krazek;
+		dGeomID boisko;
+		dGeomID Pad1;
+		dGeomID Pad2;
+		dGeomID bramka1;
+		dGeomID bramka2;
+		bool trafienie1;
+		bool trafienie2;
+	}mD;
 
 	dVector3 posStol[5]; // pozycje elementow stolu
+	dVector3 posKrazek;
 
 	char wynik[20]; // tablica znakow do wyswietlania wynikow
 	int size;
-	int dx[3], dy[3], dz[3]; // sfera
+	float dx[3], dy[3], dz[3]; // przyrost sily
+	float sila;			// zmienna do sterowania komputerowego
+	float stare_x;		// zmienna do sterowania komputerowego
 	// --------- test kolizji ----------
 	
 	int licznik1, licznik2;
@@ -64,4 +85,7 @@ public:
 	dJointID Joints_bramka[5];
 	float ster[5];
 	int petla; // zmienna iteruj¹ca obiegi pêtli glownej
+	
+	const dReal *Pad1Vel;
+	const dReal *Pad2Vel;
 };

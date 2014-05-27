@@ -9,6 +9,8 @@ openGLview::openGLview(void)
 	dynamicWorld.InitODE(); //inicjalizacja srodowiska ode
 	dynamicWorld.size=2;
 	selected_id=0;
+	znak_poziom=0;
+	znak_pion=0;
 }
 
 
@@ -19,17 +21,65 @@ openGLview::~openGLview(void)
 void openGLview::keyboard(unsigned char key, int x, int y)// metoda w zaleÂżnooeci od wcisniĂŞtego przycisku wywoÂłuje odpowiednie zdarzenia
 {
 	if (key == 27) exit(0); // escape key is ascii 27 }
-	if (key == 120) { //key x prawo 
-	dynamicWorld.dx[selected_id]=5; }
-	if (key == 122) { //key z lewo
-	dynamicWorld.dx[selected_id]=-5; }
+	if (key == 100) { //key d prawo 
+		if(znak_poziom<0)
+		{
+			if(selected_id==1){
+			dBodySetLinearVel(dynamicWorld.pady[0].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
+			dBodySetLinearVel(dynamicWorld.pady[1].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
+			}
+			if(selected_id==2){
+			dBodySetLinearVel(dynamicWorld.pady[2].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
+			dBodySetLinearVel(dynamicWorld.pady[3].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
+			}
+			znak_poziom=1;
+		}
+		dynamicWorld.dx[selected_id]=5; }
+	if (key == 97) { //key a lewo
+		if(znak_poziom>=0)
+		{
+			if(selected_id==1){
+			dBodySetLinearVel(dynamicWorld.pady[0].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
+			dBodySetLinearVel(dynamicWorld.pady[1].Body, 0, 0, dynamicWorld.Pad1Vel[2]);
+			}
+			if(selected_id==2){
+			dBodySetLinearVel(dynamicWorld.pady[2].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
+			dBodySetLinearVel(dynamicWorld.pady[3].Body, 0, 0, dynamicWorld.Pad2Vel[2]);
+			}
+			znak_poziom=-1;
+		}		
+		dynamicWorld.dx[selected_id]=-5; }
 	if (key == 101) { //key e góra 
 	dynamicWorld.dy[selected_id]=5; }
-	if (key == 100) { //key d dół
+	if (key == 113) { //key q dół
 	dynamicWorld.dy[selected_id]=-5; }
-	if (key == 99) { //key c do siebie
+	if (key == 115) { //key s do siebie
+		if(znak_pion>=0)
+		{
+			if(selected_id==1){
+			dBodySetLinearVel(dynamicWorld.pady[0].Body, dynamicWorld.Pad1Vel[0], 0, 0);
+			dBodySetLinearVel(dynamicWorld.pady[1].Body, dynamicWorld.Pad1Vel[0], 0, 0);
+			}
+			if(selected_id==2){
+			dBodySetLinearVel(dynamicWorld.pady[2].Body, dynamicWorld.Pad2Vel[0], 0, 0);
+			dBodySetLinearVel(dynamicWorld.pady[3].Body, dynamicWorld.Pad2Vel[0], 0, 0);
+			}
+			znak_pion=-1;
+		}
 	dynamicWorld.dz[selected_id]=5; }
-	if (key == 118) { //key v w głąb
+	if (key == 119) { //key w w głąb
+		if(znak_pion<0)
+		{
+			if(selected_id==1){
+			dBodySetLinearVel(dynamicWorld.pady[0].Body, dynamicWorld.Pad1Vel[0], 0, 0);
+			dBodySetLinearVel(dynamicWorld.pady[1].Body, dynamicWorld.Pad1Vel[0], 0, 0);
+			}
+			if(selected_id==2){
+			dBodySetLinearVel(dynamicWorld.pady[2].Body, dynamicWorld.Pad2Vel[0], 0, 0);
+			dBodySetLinearVel(dynamicWorld.pady[3].Body, dynamicWorld.Pad2Vel[0], 0, 0);
+			}
+			znak_pion=1;
+		}
 	dynamicWorld.dz[selected_id]=-5; }
 }
 

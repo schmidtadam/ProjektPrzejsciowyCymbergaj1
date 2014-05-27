@@ -7,42 +7,83 @@ dJointGroupID contactgroup; // wykorzystywane w kolizjach
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 {
 	int i;
+	
+	struct mD
+	{
+		dGeomID krazek;
+		dGeomID boisko;
+		dGeomID Pad1;
+		dGeomID Pad2;
+		dGeomID bramka1;
+		dGeomID bramka2;
+		bool trafienie1;
+		bool trafienie2;
+	};
+	mD *dane=(mD *)(data);
+	dGeomID krazekGeom=dane->krazek;
+	dGeomID boiskoGeom=dane->boisko;
+	dGeomID pad1Geom=dane->Pad1;
+	dGeomID pad2Geom=dane->Pad2;
+	dGeomID bramka1Geom=dane->bramka1;
+	dGeomID bramka2Geom=dane->bramka2;
+	
+	if(o2==krazekGeom)
+	{
+		dGeomID temp=o1;
+		o1=o2;
+		o2=temp;
+	}
 	dBodyID b1 = dGeomGetBody(o1);
 	dBodyID b2 = dGeomGetBody(o2);
-	dGeomID *dane=(dGeomID *)(data); // rzutowanie do typu dGeomID
-	dGeomID *krazekGeom=&dane[0];
-	dGeomID *pad1Geom=&dane[1];
-	dGeomID *pad2Geom=&dane[2];
-	dBodyID krazekBody = dGeomGetBody(*krazekGeom);
-	dVector3 posKrazek;
-	dBodyCopyPosition (krazekBody, posKrazek); // Pobranie pozycji
+
+	if(dane->trafienie1==false && o1==krazekGeom && o2==bramka1Geom)
+		dane->trafienie1=true;
+	if(dane->trafienie2==false && o1==krazekGeom && o2==bramka2Geom)
+		dane->trafienie2=true;
+
 	dContact contact[MAX_CONTACTS]; // up to MAX_CONTACTS contacts per box-box
-	if((posKrazek[2]>0.1 && posKrazek[2]<0.4) || o1==*pad1Geom || o1==*pad2Geom || o2==*pad1Geom || o2==*pad2Geom || o1==*krazekGeom || o2==*krazekGeom) // jesli krazek uczestniczy w kolizji to male tarcie
+	if((o1==boiskoGeom && o2==pad2Geom) || (o1==boiskoGeom && o2==pad1Geom) || (o2==boiskoGeom && o1==pad2Geom) || (o2==boiskoGeom && o1==pad1Geom) ||
+		(o1==krazekGeom && o2==boiskoGeom)) // kontakt padow i krazka z boiskiem
 	{
 		for (i = 0; i < MAX_CONTACTS; i++)
 		{
 			contact[i].surface.mode = dContactBounce | dContactSoftCFM;
 			contact[i].surface.mu = 0.001; // change from 1  - tarcie
 			contact[i].surface.mu2 = 0;
-			contact[i].surface.bounce = 0.1; // changed from 0.9
-			contact[i].surface.bounce_vel = 0.1; // changed from 0.5
+			contact[i].surface.bounce = 0; // changed from 0.9 - bez odbijania
+			contact[i].surface.bounce_vel = 0; // changed from 0.5
 			contact[i].surface.soft_cfm = 0.1;
 			contact[i].surface.slip1 = 0; // change from 0
 			contact[i].surface.slip2 = 0;
 		}
 	}
+	//if(o1==pad1Geom || o1==pad2Geom || o2==pad1Geom || o2==pad2Geom || o1==krazekGeom) // jesli krazek uczestniczy w kolizji to male tarcie
 	else
+	{
 		for (i = 0; i < MAX_CONTACTS; i++)
 		{
 			contact[i].surface.mode = dContactBounce | dContactSoftCFM;
 			contact[i].surface.mu = 0.01; // change from 1  - tarcie
 			contact[i].surface.mu2 = 0;
-			contact[i].surface.bounce = 0.3; // changed from 0.9
-			contact[i].surface.bounce_vel = 0.3; // changed from 0.5
-			contact[i].surface.soft_cfm = 0.1;
+			contact[i].surface.bounce = 0.9; // changed from 0.9
+			contact[i].surface.bounce_vel = 0.1; // changed from 0.5 minimalna predkosci przy ktorej nastepuje odbicie
+			contact[i].surface.soft_cfm = 0.01;
 			contact[i].surface.slip1 = 0; // change from 0
 			contact[i].surface.slip2 = 0;
 		}
+	}
+	//else
+	//	for (i = 0; i < MAX_CONTACTS; i++)
+	//	{
+	//		contact[i].surface.mode = dContactBounce | dContactSoftCFM;
+	//		contact[i].surface.mu = 0.1; // change from 1  - tarcie
+	//		contact[i].surface.mu2 = 0;
+	//		contact[i].surface.bounce = 0.3; // changed from 0.9
+	//		contact[i].surface.bounce_vel = 0.3; // changed from 0.5
+	//		contact[i].surface.soft_cfm = 0.1;
+	//		contact[i].surface.slip1 = 0; // change from 0
+	//		contact[i].surface.slip2 = 0;
+	//	}
 	if (int numc = dCollide(o1, o2, MAX_CONTACTS, &contact[0].geom, sizeof(dContact)))
 	{
 		for (i = 0; i < numc; i++)
@@ -62,10 +103,8 @@ COdeWorld::COdeWorld(void)
 	licznik2=0;
 	golLicznik=0;
 	golLicznik2=0;
-	// ------ przypisanie referencji geometrii obiektow do tablicy mojeDane -----
-	mojeDane[0]=&krazek.Geom[0];
-	mojeDane[1]=&pady[0].Geom[0];
-	mojeDane[2]=&pady[2].Geom[0];
+	sila=0;
+	stare_x=0;
 }
 COdeWorld::~COdeWorld(void)
 {
@@ -74,7 +113,76 @@ COdeWorld::~COdeWorld(void)
 	dSpaceDestroy(Space);
 	dWorldDestroy(World);
 }
+void COdeWorld::funkcja_komputerowa(float x1, float x1_stare, float x2)
+{
+	if(abs(x1-x2)>0.015 )//&& abs(x1-x2)<0.034)
+	{
+		if(x1>x2)//-x1_stare>0)
+		{
+			if(sila<0.5)
+			{
+				sila+=0.1;
+				dx[2]=sila;
+			}
+			else
+				sila=0;
+		}
+		if(x1<x2)//-x1_stare<0)
+		{
+			if(sila>-0.5)
+			{
+				sila-=0.1;
+				dx[2]=sila;
+			}
+			else
+				sila=0;
+		}
+	}
+	
+	//dBodySetPosition(pady[0].Body, 0, 0.055, 0.25);	//ustawienie pozycji pada1
+	//dBodySetPosition(pady[1].Body, 0, 0.07, 0.25);  //ustawienie pozycji pada1
+	//dBodySetPosition(pady[2].Body, 0, 0.055, -0.25);//ustawienie pozycji pada2
+	//dBodySetPosition(pady[3].Body, 0, 0.07, -0.25);	//ustawienie pozycji pada2
+}
+//*********************************DLL***************************************
+void COdeWorld::odczyt_dll(float x1, float x2, float force)
+{
+	HINSTANCE hDll;
+	hDll = LoadLibrary( "Projekt1.dll" );
 
+	if( hDll != NULL )
+	{
+    // jeœli wszystko posz³o dobrze, tutaj mo¿emy wywo³aæ jak¹œ funkcjê biblioteczn¹
+	//FunkcjaOdczytu =( MYPROC ) GetProcAddress( hDll, "funkcja_komputerowa" );
+	PROCRunThisModule FunkcjaOdczytu = (PROCRunThisModule)GetProcAddress(hDll, "funkcja_komputerowa"); 
+
+    if( FunkcjaOdczytu != NULL )
+    {
+        force =FunkcjaOdczytu( x1, x2, force );
+        dx[2]=force;
+    }
+	else
+		drawText(-3.5, 1.6, -4.5, "BLAD", 1.0, 1.0, 1.0);
+    
+    FreeLibrary( hDll );
+	
+	}
+	else
+		drawText(-3.5, 1.6, -4.5, "BLAD2", 1.0, 1.0, 1.0);
+}
+//********************************KONIEC DLL*********************************
+void COdeWorld::funkcja_ustawiajaca()
+{
+	dBodySetPosition(pady[0].Body, 0, 0.055, 0.25);	//ustawienie pozycji pada1
+	dBodySetPosition(pady[1].Body, 0, 0.07, 0.25);  //ustawienie pozycji pada1
+	dBodySetPosition(pady[2].Body, 0, 0.055, -0.25);//ustawienie pozycji pada2
+	dBodySetPosition(pady[3].Body, 0, 0.07, -0.25);	//ustawienie pozycji pada2
+	dBodySetLinearVel(pady[0].Body, 0, 0, 0);		//predkosci=0
+	dBodySetLinearVel(pady[1].Body, 0, 0, 0);
+	dBodySetLinearVel(pady[2].Body, 0, 0, 0);
+	dBodySetLinearVel(pady[3].Body, 0, 0, 0);
+
+}
 // Draw a geom
 void COdeWorld::DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red, float green, float blue)
 {
@@ -108,7 +216,7 @@ void COdeWorld::DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red,
 // Simulation step
 void COdeWorld::SimStep(double dt)
 {
-	dSpaceCollide(Space, (void*)(&mojeDane), &nearCallback);//ustawia sprawdzanie kolizji
+	dSpaceCollide(Space, (void*)(&mD), &nearCallback);//ustawia sprawdzanie kolizji
 	dWorldQuickStep(World, dt); //wykonuje krok symulacji
 	dJointGroupEmpty(contactgroup);
 	for (int bodies = 0;bodies<5;bodies++)//rysowanie obiektow
@@ -129,8 +237,9 @@ void COdeWorld::SimStep(double dt)
 	ground.DrawGrid(); //rysuje ziemie
 
 	// -------- test kolizji ---------------
-	dVector3 posKrazek;
-	dBodyCopyPosition (krazek.Body, posKrazek); // Pobranie pozycji
+	//dVector3 posKrazek;
+	stare_x=posKrazek[0];						//przypisanie starej wartosci x krazka
+	dBodyCopyPosition (krazek.Body, posKrazek); // Pobranie nowej pozycji
 	const dReal *KrazekVel;
 	KrazekVel=dBodyGetLinearVel (krazek.Body); // Pobranie pr. liniowej
 	const dReal *KrazekAng;
@@ -139,28 +248,34 @@ void COdeWorld::SimStep(double dt)
 	Pad1Ang=dBodyGetAngularVel (pady[0].Body);
 	const dReal *Pad2Ang;
 	Pad2Ang=dBodyGetAngularVel (pady[2].Body);
-	if(*mojeDane[0]==krazek.Geom[0])
+
 	sprintf(wynik, "Pozycja krazka:");
 	drawText(-1.5, 1.6, -4.5, wynik, 1.0, 1.0, 1.0);
 	sprintf(wynik, "x:%.3f y:%.3f z:%.3f", /*Pad1Ang[0], Pad1Ang[1], Pad1Ang[2]*/posKrazek[0], posKrazek[1], posKrazek[2]);
 	drawText(-1.5, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
-	if(posKrazek[0] < 0.076 && posKrazek[0] > -0.076)
+	if(mD.trafienie1==true)//posKrazek[2] < -0.368)
 	{
-		if(posKrazek[2] < -0.368)
-		{
-			golLicznik++;
-			dBodySetPosition(krazek.Body, 0.1, 0.052, 0);
-			dBodySetLinearVel(krazek.Body, *KrazekVel, *(KrazekVel+1), 0);
-		}
-		if(posKrazek[2] > 0.368)
-		{
-			golLicznik2++;
-			dBodySetPosition(krazek.Body, 0.1, 0.052, 0);
-			dBodySetLinearVel(krazek.Body, *KrazekVel, *(KrazekVel+1), 0);
-		}
+		golLicznik++;
+		dBodySetPosition(krazek.Body, 0, 0.052, 0.2);
+		dBodySetLinearVel(krazek.Body, 0, 0, 0);
+		funkcja_ustawiajaca();
+		mD.trafienie1=false;
+	}
+	if(mD.trafienie2==true)
+	{
+		golLicznik2++;
+		dBodySetPosition(krazek.Body, 0, 0.052, -0.2);
+		dBodySetLinearVel(krazek.Body, 0, 0, 0);
+		funkcja_ustawiajaca();
+		mD.trafienie2=false;
 	}
 	sprintf(wynik, "Trafienia: %d : %d", golLicznik, golLicznik2);
 	drawText(-1.5, 1.0, -4.5, wynik, 1.0, 1.0, 1.0);
+	//-----------wywolanie funkcji komputerowej------------
+	dVector3 posPAD2;
+	dBodyCopyPosition (pady[2].Body, posPAD2); // Pobranie pozycji
+	funkcja_komputerowa(posKrazek[0], stare_x, posPAD2[0]);
+	odczyt_dll(posKrazek[0], posPAD2[0], sila);
 
 	//----------- sterowanie obiektami ---------------------
 	if(dx[1] || dz[1] !=0)
@@ -175,32 +290,40 @@ void COdeWorld::SimStep(double dt)
 	}
 
 	// ----------- Ograniczenia obrotow i pozycji po ustaleniu sie pozycji obiektow -----------
-	const dReal *Pad1Vel;
+	
 	Pad1Vel=dBodyGetLinearVel (pady[0].Body);
 	//const dReal *Pad1Ang;
 	//Pad1Ang=dBodyGetAngularVel (pady[0].Body);
-	const dReal *Pad2Vel;
+	
 	Pad2Vel=dBodyGetLinearVel (pady[2].Body);
 	//const dReal *Pad2Ang;
 	//Pad2Ang=dBodyGetAngularVel (pady[2].Body);
+
 	if(petla<400)
 	{
 		petla++;
 	}
+	if(petla==1)
+	{
+		dBodySetPosition(pady[0].Body, 0, 0.07, 0.25);	//ustawienie pocz¹tkowe pada1
+		dBodySetPosition(pady[1].Body, 0, 0.07, 0.265);	//ustawienie pocz¹tkowe pada1
+		dBodySetPosition(pady[2].Body, 0, 0.07, -0.25);	//ustawienie pocz¹tkowe pada2
+		dBodySetPosition(pady[3].Body, 0, 0.07, -0.235); //ustawienie pocz¹tkowe pada2
+	}
 	if(petla==400)
 	{
-		//dBodySetAngularVel(krazek.Body, 0, 0, 0); // ograniczenie pr. obrotowej krazka
+		dBodySetAngularVel(krazek.Body, 0, 0, 0); // ograniczenie pr. obrotowej krazka
 		dBodySetLinearVel(krazek.Body, *KrazekVel, 0, *(KrazekVel+2)); // ograniczenie pr. liniowej w osi y krazka
 	
 		dBodySetLinearVel(pady[0].Body, *Pad1Vel, 0, *(Pad1Vel+2)); // ograniczenie pr. liniowej w osi y pada1
-		//dBodySetAngularVel(pady[0].Body, 0, 0, 0); // ograniczenie pr. obrotowej krazka
+		//dBodySetAngularVel(pady[0].Body, 0, 0, 0); // ograniczenie pr. obrotowej pada1
 		dBodySetLinearVel(pady[1].Body, *Pad1Vel, 0, *(Pad1Vel+2)); // ograniczenie pr. liniowej w osi y pada1
-		//dBodySetAngularVel(pady[1].Body, 0, 0, 0); // ograniczenie pr. obrotowej krazka
+		//dBodySetAngularVel(pady[1].Body, 0, 0, 0); // ograniczenie pr. obrotowej pada1
 
 		dBodySetLinearVel(pady[2].Body, *Pad2Vel, 0, *(Pad2Vel+2)); // ograniczenie pr. liniowej w osi y pada2
-		//dBodySetAngularVel(pady[2].Body, 0, 0, 0); // ograniczenie pr. obrotowej krazka
+		//dBodySetAngularVel(pady[2].Body, 0, 0, 0); // ograniczenie pr. obrotowej pada2
 		dBodySetLinearVel(pady[3].Body, *Pad2Vel, 0, *(Pad2Vel+2)); // ograniczenie pr. liniowej w osi y pada2
-		//dBodySetAngularVel(pady[3].Body, 0, 0, 0); // ograniczenie pr. obrotowej krazka
+		//dBodySetAngularVel(pady[3].Body, 0, 0, 0); // ograniczenie pr. obrotowej pada2
 	}
 
 	// ------------ pozycja stolu - zablokowanie POZYCJI (z mozliwoscia blokady PREDKOSCI) ---------------
@@ -212,7 +335,7 @@ void COdeWorld::SimStep(double dt)
 	{
 		for(int i=0; i<5; i++)
 		{
-			dBodyCopyPosition (Object[i].Body, posStol[i]); // Pobranie poczatkowej predkosci stolu
+			dBodyCopyPosition (Object[i].Body, posStol[i]); // Pobranie poczatkowej pozycji stolu
 		}
 	}
 	if(petla>20)
@@ -232,7 +355,7 @@ void COdeWorld::SimStep(double dt)
 	drawText(1.2, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
 	sprintf(wynik, "Pad1-krazek: %.3f", distance2);
 	drawText(1.2, 1.0, -4.5, wynik, 1.0, 1.0, 1.0);
-	if(distance1<=0.03) // suma promieni krazka i pada to 0.3
+	if(distance1<=0.03) // suma promieni krazka i pada1 to 0.3
 		{
 			if(flaga1)
 			{
@@ -242,7 +365,7 @@ void COdeWorld::SimStep(double dt)
 		}
 	else
 		flaga1=true;
-	if(distance2<=0.03) // suma promieni krazka i pada to 0.3
+	if(distance2<=0.03) // suma promieni krazka i pada2 to 0.3
 		{
 			if(flaga2)
 			{
@@ -381,7 +504,7 @@ void COdeWorld::InitODE()
 	radius=0.01;
 	length=0.005;
 	krazek.Body = dBodyCreate(World);
-	dBodySetPosition(krazek.Body, 0.1, 0.06, 0);
+	dBodySetPosition(krazek.Body, 0, 0.063, 0);
 	dBodySetLinearVel(krazek.Body, 0, 0, 0);
 	dRFromAxisAndAngle(R, 1, 0, 0, 90);
 	dBodySetRotation(krazek.Body, R);
@@ -464,7 +587,6 @@ void COdeWorld::InitODE()
     dJointSetHingeParam(Joints2[1], dParamHiStop, 0);//ruchu
 
 	//**********bramki**************
-//	glColor3f(1.0f,1.0f,1.0f); //<-to nie dziala, jak ustawic kolory ?
 	bramka[0].Body = dBodyCreate(World);//tworzona jest bramka tylna
 	sides[0] = 0.13;//ustalane sa wymiary bramki
 	sides[1] = bandy_h;
@@ -505,7 +627,21 @@ void COdeWorld::InitODE()
     dJointSetHingeParam(Joints_bramka[1], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints_bramka[1], dParamHiStop, 0);//ruchu
 
+	//mojeDane[0]=krazek.Geom[0];
+	//mojeDane[1]=pady[0].Geom[0];
+	//mojeDane[2]=pady[2].Geom[0];
+	//mojeDane[3]=Object[0].Geom[0]; // spod boiska
+	//mojeDane[4]=krazek.Geom[0];
+	//posKrazek[0]=0;
 
+	mD.krazek=krazek.Geom[0];
+	mD.boisko=Object[0].Geom[0];
+	mD.Pad1=pady[0].Geom[0];
+	mD.Pad2=pady[2].Geom[0];
+	mD.bramka1=bramka[0].Geom[0];
+	mD.bramka2=bramka[1].Geom[0];
+	mD.trafienie1=false;
+	mD.trafienie2=false;
 }
 void COdeWorld::CloseODE()
 {
