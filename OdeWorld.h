@@ -8,6 +8,10 @@
 
 typedef float (*PROCRunThisModule)(float x1, float x2, float sila);
 extern "C" float funkcja_komputerowa(float x1, float x2, float sila);
+
+typedef void (*PROCRunAtak)(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
+extern "C" void funkcjaAtak(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
+
 // some constants
 #define DENSITY (0.5) // density of all objects
 #define GEOMSPERBODY 1 // maximum number of geometries per body
@@ -33,6 +37,7 @@ public:
 	void drawText(float x, float y, float z, char *string, float red, float green, float blue);//tekst
 	void funkcja_komputerowa(float x1, float x2);
 	void odczyt_dll(float x1, float x2, float force);
+	void funkcja_komputerowa2(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
 	void funkcja_ustawiajaca();
 
 	MATRIX GeomMatrix;
@@ -69,13 +74,18 @@ public:
 	dVector3 posPad1;
 	dVector3 posPad2;
 	dVector3 posPAD2;
+	dVector3 posBramka[2];
 
 	const dReal *Pad1Vel; //predkosci padow
+	float PadVel[4];
 	const dReal *Pad2Vel;
 	const dReal *Pad1Ang; //predkosci katowe padow
 	const dReal *Pad2Ang;
 	const dReal *KrazekVel; //predkosc krazka
+	float KraVel[3];
 	const dReal *KrazekAng; //predkosc katowa krazka
+	float* wsk;
+	float predkoscCz[4];
 	//-----------------------------------------------------------------------------------
 	char wynik[20]; // tablica znakow do wyswietlania wynikow
 	int size;

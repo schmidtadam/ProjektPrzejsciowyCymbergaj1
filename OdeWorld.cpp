@@ -104,6 +104,7 @@ COdeWorld::COdeWorld(void)
 	golLicznik=0;
 	golLicznik2=0;
 	sila=0;
+	predkoscCz[3]=1;
 }
 COdeWorld::~COdeWorld(void)
 {
@@ -151,29 +152,156 @@ void COdeWorld::odczyt_dll(float x1, float x2, float force)
 
 	if( hDll != NULL )
 	{
-    // jeœli wszystko posz³o dobrze, tutaj mo¿emy wywo³aæ jak¹œ funkcjê biblioteczn¹
-	//FunkcjaOdczytu =( MYPROC ) GetProcAddress( hDll, "funkcja_komputerowa" );
-	PROCRunThisModule FunkcjaOdczytu = (PROCRunThisModule)GetProcAddress(hDll, "funkcja_komputerowa"); 
-
-    if( FunkcjaOdczytu != NULL )
-    {
-        force =FunkcjaOdczytu( x1, x2, force );
-		dBodySetLinearVel(pady[2].Body, force, 0, 0);
-		dBodySetLinearVel(pady[3].Body, force, 0, 0);
-		sila=force;
-        //dBodySetLinearVel(pady[2].Body, force, Pad2Vel[1], Pad2Vel[2]);
-		//dBodySetLinearVel(pady[3].Body, force, Pad2Vel[1], Pad2Vel[2]);
-		//dx[2]=force;
-    }
-	else
-		drawText(-3.5, 1.6, -4.5, "BLAD", 1.0, 1.0, 1.0);
+		// jeœli wszystko posz³o dobrze, tutaj mo¿emy wywo³aæ jak¹œ funkcjê biblioteczn¹
+		//FunkcjaOdczytu =( MYPROC ) GetProcAddress( hDll, "funkcja_komputerowa" );
+		PROCRunThisModule FunkcjaOdczytu = (PROCRunThisModule)GetProcAddress(hDll, "funkcja_komputerowa"); 
+		PROCRunAtak FunkcjaAtak = (PROCRunAtak)GetProcAddress(hDll, "funkcjaAtak");
+		if( FunkcjaOdczytu != NULL )
+		{
+			force =FunkcjaOdczytu( x1, x2, force);
+			sila=force;
+			dBodySetLinearVel(pady[2].Body, force, 0, 0);
+			dBodySetLinearVel(pady[3].Body, force, 0, 0);
+			
+		}
+		else
+			drawText(-3.5, 1.6, -4.5, "BLAD", 1.0, 1.0, 1.0);
     
-    FreeLibrary( hDll );
+		if( FunkcjaAtak != NULL )
+		{
+			FunkcjaAtak(posKrazek, posPad1, KraVel, PadVel, predkoscCz);
+			if(petla==400)
+			{
+				dBodySetLinearVel(pady[0].Body, predkoscCz[0], predkoscCz[1], predkoscCz[2]);
+				dBodySetLinearVel(pady[1].Body, predkoscCz[0], predkoscCz[1], predkoscCz[2]);
+			}
+		}
+		else
+			drawText(-3.5, 1.6, -4.5, "BLAD funkcji z atakiem", 1.0, 1.0, 1.0);
+		FreeLibrary( hDll );
 	
 	}
 	else
 		drawText(-3.5, 1.6, -4.5, "BLAD2", 1.0, 1.0, 1.0);
 }
+
+void COdeWorld::funkcja_komputerowa2(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc)
+{
+	predkosc[0]=velPad[0];
+	predkosc[1]=velPad[1];
+	predkosc[2]=velPad[2];
+	predkosc[3]=velPad[3];
+	bool atak;
+	if(predkosc[3]==1)
+		atak=true;
+	else
+		atak=false;
+
+	if(abs(posKra[0] - posPad[0]) > 0.015)
+	{
+		if(posKra[0]>posPad[0])
+		{
+			if(predkosc[0]<10){
+				predkosc[0]+=0.5;
+			}
+			else
+				predkosc[0]=10;
+		}
+		if(posKra[0]<posPad[0])
+		{
+			if(predkosc[0]>-10){
+				predkosc[0]-=0.5;
+			}
+			else
+				predkosc[0]=-10;
+		}
+	}
+	else
+		predkosc[0]=0;
+	//------------- atak ----------------
+	float prAtaku=15;
+	if(posPad[2]<=0.1)
+		atak=false;
+	
+	if(atak && posKra[2]>0.1) 
+	{
+		predkosc[2]=-prAtaku; // do przodu
+	}
+	
+	if(atak==false && posPad[2]<0.25)
+	{
+		predkosc[2]=prAtaku; // do tylu
+	}
+	if(atak==false && posPad[2]>0.25)
+	{
+		predkosc[2]=0; // zatrzymanie
+		atak=true;
+	}
+	if(atak)
+		predkosc[3]=1;
+	else
+		predkosc[3]=0;
+
+	
+	//bool atak;
+	//float predkosc[4];
+	//predkosc[0]=velPad[0];
+	//predkosc[2]=velPad[2];
+	//predkosc[3]=velPad[3];
+	//if(predkosc[3]==1)
+	//	atak=true;
+	//if(predkosc[3]==0)
+	//	atak=false;
+	//if(abs(posKra[0]-posPad[0])>0.015 )
+	//{
+	//	if(posKra[0]>posPad[0])
+	//	{
+	//		if(predkosc[0]<10){
+	//			predkosc[0]+=0.5;
+	//		}
+	//		else
+	//			predkosc[0]=10;
+	//	}
+	//	if(posKra[0]<posPad[0])
+	//	{
+	//		if(predkosc[0]>-10){
+	//			predkosc[0]-=0.5;
+	//		}
+	//		else
+	//			predkosc[0]=-10;
+	//	}
+	//}
+	//else
+	//	predkosc[0]=0;
+	////-------atak-------------
+	//if(posPad[2]<=0.1)
+	//	atak=false;
+	//
+	//if(atak && posKra[2]>0.1)
+	//{
+	//	predkosc[2]=-15;
+	//}
+	//
+	//if(atak==false && posPad[2]<0.25)
+	//{
+	//	predkosc[2]=15;
+	//}
+	//if(atak==false && posPad[2]>0.25)
+	//{
+	//	predkosc[2]=0;
+	//	atak=true;
+	//}
+	//if(atak)
+	//	predkosc[3]=1;
+	//else
+	//	predkosc[3]=0;
+	//sprintf(wynik, "atak %d", atak);
+	//drawText(2.0, 2.2, -4.5, wynik, 1.0, 1.0, 1.0);
+	//return predkosc;
+}
+
+
+
 //********************************KONIEC DLL*********************************
 void COdeWorld::funkcja_ustawiajaca()
 {
@@ -257,13 +385,17 @@ void COdeWorld::SimStep(double dt)
 	Pad1Ang=dBodyGetAngularVel (pady[0].Body); // Pobranie pr. obrotowej pada 1
 	Pad2Ang=dBodyGetAngularVel (pady[2].Body); // Pobranie pr. obrotowej pada 2
 
-	sprintf(wynik, "Predkosc pada: %.3f", Pad2Vel[0]);
+	sprintf(wynik, "Predkosc pada: %.3f", predkoscCz[3]/*Pad2Vel[0]*/);
 	drawText(-2.0, 2.5, -4.5, wynik, 1.0, 1.0, 1.0);
 
-	sprintf(wynik, "Pozycja krazka:");
+	sprintf(wynik, "Predkosc pada: %.3f", Pad1Vel[2]);
+	drawText(2.0, 2.5, -4.5, wynik, 1.0, 1.0, 1.0);
+
+	sprintf(wynik, "Petla: %d sila %f", petla, sila);
 	drawText(-1.5, 1.6, -4.5, wynik, 1.0, 1.0, 1.0);
 	sprintf(wynik, "x:%.3f y:%.3f z:%.3f", /*Pad1Ang[0], Pad1Ang[1], Pad1Ang[2]*/posKrazek[0], posKrazek[1], posKrazek[2]);
 	drawText(-1.5, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
+	// --------------- sprawdzanie i liczenie goli -------------------
 	if(mD.trafienie1==true)
 	{
 		golLicznik++;
@@ -286,8 +418,25 @@ void COdeWorld::SimStep(double dt)
 	dVector3 posPAD2;
 	dBodyCopyPosition (pady[2].Body, posPAD2); // Pobranie pozycji
 	//funkcja_komputerowa(posKrazek[0], posPAD2[0]);
-	if(petla>200)
-	odczyt_dll(posKrazek[0], posPAD2[0], sila);
+	
+	// konwersja const dReal --> float
+	KraVel[0]=KrazekVel[0]; 
+	KraVel[1]=KrazekVel[1];
+	KraVel[2]=KrazekVel[2];
+	PadVel[0]=Pad1Vel[0];
+	PadVel[1]=Pad1Vel[1];
+	PadVel[2]=Pad1Vel[2];
+	// - - - - - - - - - - -
+	PadVel[3]=predkoscCz[3]; // indeks "3" pelni role wartosci logicznej czy atakowac
+	
+	//funkcja_komputerowa2(posKrazek, posPad1, KraVel, PadVel, wsk);
+	
+	sprintf(wynik, "Pr. pada: %.2f %.2f atak: %0.f", predkoscCz[0], predkoscCz[2], predkoscCz[3]);
+	drawText(0, 3, -4.5, wynik, 1.0, 1.0, 1.0);
+
+	if(petla==400)
+		odczyt_dll(posKrazek[0], posPAD2[0], sila); // wywolanie odczytu DLL i wraz z nim sterowania komputerowego
+	
 	//----------- sterowanie obiektami ---------------------
 	if(dx[1] || dz[1] !=0)
 	{
@@ -310,6 +459,7 @@ void COdeWorld::SimStep(double dt)
 		dBodySetPosition(pady[1].Body, 0, 0.07, 0.265);	//ustawienie pocz¹tkowe pada1
 		dBodySetPosition(pady[2].Body, 0, 0.07, -0.25);	//ustawienie pocz¹tkowe pada2
 		dBodySetPosition(pady[3].Body, 0, 0.07, -0.235); //ustawienie pocz¹tkowe pada2
+		dBodySetPosition(krazek.Body, 0.02, 0.063, 0.2); // krazek
 	}
 	if(petla==400)
 	{
@@ -339,6 +489,8 @@ void COdeWorld::SimStep(double dt)
 			dBodyCopyPosition (Object[i].Body, posStol[i]); // Pobranie poczatkowej pozycji stolu
 			if(i<4)
 				dBodyCopyPosition (naroznik[i].Body, posNaroznik[i]); // Pobranie poczatkowej pozycji naroznikow
+			if(i<2)
+				dBodyCopyPosition (bramka[i].Body, posBramka[i]); // Pobranie poczatkowej pozycji bramek
 		}
 	}
 	if(petla>20)
@@ -346,7 +498,9 @@ void COdeWorld::SimStep(double dt)
 		{
 			dBodySetPosition(Object[i].Body, posStol[i][0], posStol[i][1], posStol[i][2]); //zablokowanie POZYCJI stolu, zeby sie nie poruszal
 			if(i<4)
-				dBodySetPosition(naroznik[i].Body, posNaroznik[i][0], posNaroznik[i][1], posNaroznik[i][2]);
+				dBodySetPosition(naroznik[i].Body, posNaroznik[i][0], posNaroznik[i][1], posNaroznik[i][2]); // zablokowanie pozycji naro¿ników
+			if(i<2)
+				dBodySetPosition(bramka[i].Body, posBramka[i][0], posBramka[i][1], posBramka[i][2]); // zablokowanie pozycji bramek
 		}
 	// ---------------- obliczanie kolizji z krazekiem ------------------
 	
@@ -718,6 +872,7 @@ void COdeWorld::InitODE()
 	mD.bramka2=bramka[1].Geom[0];
 	mD.trafienie1=false;
 	mD.trafienie2=false;
+
 }
 void COdeWorld::CloseODE()
 {
