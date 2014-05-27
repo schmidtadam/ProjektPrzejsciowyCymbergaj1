@@ -148,7 +148,7 @@ void COdeWorld::funkcja_komputerowa(float x1, float x1_stare, float x2)
 void COdeWorld::odczyt_dll(float x1, float x2, float force)
 {
 	HINSTANCE hDll;
-	hDll = LoadLibrary("test.dll" );
+	hDll = LoadLibrary("VSDLL.dll" );
 
 	if( hDll != NULL )
 	{
@@ -274,8 +274,8 @@ void COdeWorld::SimStep(double dt)
 	//-----------wywolanie funkcji komputerowej------------
 	dVector3 posPAD2;
 	dBodyCopyPosition (pady[2].Body, posPAD2); // Pobranie pozycji
-	funkcja_komputerowa(posKrazek[0], stare_x, posPAD2[0]);
-	//odczyt_dll(posKrazek[0], posPAD2[0], sila);
+	//funkcja_komputerowa(posKrazek[0], stare_x, posPAD2[0]);
+	odczyt_dll(posKrazek[0], posPAD2[0], sila);
 	//----------- sterowanie obiektami ---------------------
 	if(dx[1] || dz[1] !=0)
 	{

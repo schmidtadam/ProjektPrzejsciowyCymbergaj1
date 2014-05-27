@@ -211,7 +211,7 @@ void COGL2Dlg::OnBnClickedOk()
 	glutInitWindowSize (800, 600);// ustawiamy początkową wielkosc okna
 	glutInitWindowPosition (200, 150);// poczatkowa pozycja okna (lewy górny róg)
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);//ustawienie kolorów, precyzji i glebi
-	glutCreateWindow("openGL test");//tworzymy nowe okno
+	glutCreateWindow("Cymbergaj");//tworzymy nowe okno
 	// ustawienie odpowiednich funkcji, które bade wywolywane przy odpowiednich zdarzeniach
 	glutDisplayFunc(display);//ustawiamy funkcje display
 	glutReshapeFunc(resize);//ustawiamy funkcje resize
