@@ -51,7 +51,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_MT;_DEBUG;dIDESINGLE;CCD_IDESINGLE;WIN32;_CRT_SECURE_NO_DEPRECATE;_USE_MATH_DEFINES;_OU_NAMESPACE=odeou;dLIBCCD_ENABLED;dLIBCCD_CYL_CYL;ODE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Krzysiek\Desktop\PP\ode-0.13-czysty\ode-0.13\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\Polibuda\Semestr VI\PP\ode-0.13\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>
@@ -59,7 +59,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ode.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\Krzysiek\Desktop\PP\ode-0.13-czysty\ode-0.13\lib\DebugLib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>F:\Polibuda\Semestr VI\PP\ode-0.13\lib\DebugLib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>

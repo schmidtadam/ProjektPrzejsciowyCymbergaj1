@@ -2,7 +2,7 @@
 #include "OdeWorld.h"
 dWorldID World; // the ode simulation world
 dJointGroupID contactgroup; // wykorzystywane w kolizjach
-// this is called by dSpaceCollide when two objects in space are
+// this is called by dSpaceCollide when two planszas in space are
 // potentially colliding.
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 {
@@ -103,11 +103,20 @@ COdeWorld::COdeWorld(void)
 	licznik2=0;
 	golLicznik=0;
 	golLicznik2=0;
-	sila=0;
-	predkoscCz[3]=1;
-	predkoscZiel[3]=1;
-	srand(time(0));				//punkt poczatkowy losowania
+
+	wskAtakPad1=&atakPad1;
+	atakPad1=false;
+	wskAtakPad2=&atakPad2;
+	atakPad2=false;
+
+	wsk_czyWbramke=&czyWbramke;
+	czyWbramke=false;
+	taktykaPad1=1; // domyslna taktyka 1
+	taktykaPad2=1;
 	
+	info=true;
+
+	srand(time(0));	//punkt poczatkowy losowania
 }
 COdeWorld::~COdeWorld(void)
 {
@@ -116,37 +125,7 @@ COdeWorld::~COdeWorld(void)
 	dSpaceDestroy(Space);
 	dWorldDestroy(World);
 }
-void COdeWorld::funkcja_komputerowa(float x1, float x2)
-{
-	if(abs(x1-x2)>0.015 )
-	{
-		if(x1>x2)
-		{
-			if(sila<0.5)
-			{
-				sila+=0.1;
-				dx[2]=sila;
-			}
-			else
-				sila=0;
-		}
-		if(x1<x2)
-		{
-			if(sila>-0.5)
-			{
-				sila-=0.1;
-				dx[2]=sila;
-			}
-			else
-				sila=0;
-		}
-	}
-	
-	//dBodySetPosition(pady[0].Body, 0, 0.055, 0.25);	//ustawienie pozycji pada1
-	//dBodySetPosition(pady[1].Body, 0, 0.07, 0.25);  //ustawienie pozycji pada1
-	//dBodySetPosition(pady[2].Body, 0, 0.055, -0.25);//ustawienie pozycji pada2
-	//dBodySetPosition(pady[3].Body, 0, 0.07, -0.25);	//ustawienie pozycji pada2
-}
+
 //*********************************DLL***************************************
 void COdeWorld::odczyt_dll()
 {
@@ -156,159 +135,97 @@ void COdeWorld::odczyt_dll()
 	if( hDll != NULL )
 	{
 		// jeœli wszystko posz³o dobrze, tutaj mo¿emy wywo³aæ jak¹œ funkcjê biblioteczn¹
-		//FunkcjaOdczytu =( MYPROC ) GetProcAddress( hDll, "funkcja_komputerowa" );
-		PROCRunThisModule FunkcjaOdczytu = (PROCRunThisModule)GetProcAddress(hDll, "funkcja_komputerowa"); 
+	
+		PROCRunAtakOgrX FunkcjaAtakOgrX = (PROCRunAtakOgrX)GetProcAddress(hDll, "funkcjaAtakOgrX"); 
 		PROCRunAtak FunkcjaAtak = (PROCRunAtak)GetProcAddress(hDll, "funkcjaAtak");
-		if( FunkcjaOdczytu != NULL )
+		PROCRunProsta FunkcjaProsta = (PROCRunProsta)GetProcAddress(hDll, "funkcjaProsta");
+		PROCRunDistanceX FunkcjaDistanceX = (PROCRunDistanceX)GetProcAddress(hDll, "funkcjaDistanceX");
+		if( FunkcjaAtakOgrX != NULL )
 		{
-			FunkcjaOdczytu(posKrazek, posPad2, KraVel, PadVel2, predkoscZiel);
-			dBodySetLinearVel(pady[2].Body, predkoscZiel[0], predkoscZiel[1], predkoscZiel[2]);
-			dBodySetLinearVel(pady[3].Body, predkoscZiel[0], predkoscZiel[1], predkoscZiel[2]);
-			
+			//int wyborPada = 1; // 1 - pad czerwony    2 - pad zielony
+			if(taktykaPad1 == 1) // domyslna taktyka
+			{
+				float auxData[5];
+				auxData[0]=0.10; // Max. 0.16 - zakres poruszania padem w osi [x] ->  (-rangeX; rangeX)
+				auxData[1]=15; // max. predkosc pada w osi [x] 
+				auxData[2]=0.02; // atakDistanceX - zezwolenie na atak gdy dystans w osi [x] mnijeszy od zadanej wartosci
+				auxData[3]=0.3; // atakDistanceZ - zezwolenie na atak gdy dystans w osi [z] mnijeszy od zadanej wartosci
+				auxData[4]=16; // predkosc ataku
+				FunkcjaAtakOgrX(posKrazek, posPad1, KraVel, PadVel1, wskAtakPad1, (void*)(auxData));
+				dBodySetLinearVel(pady[0].Body, PadVel1[0], PadVel1[1], PadVel1[2]);
+				dBodySetLinearVel(pady[1].Body, PadVel1[0], PadVel1[1], PadVel1[2]);
+			}
+			//wyborPada=2;
+			if(taktykaPad2 == 1) // domyslna taktyka
+			{
+				float auxData[5];
+				auxData[0]=0.14; // Max. 0.16 - zakres poruszania padem w osi [x] ->  (-rangeX; rangeX)
+				auxData[1]=15; // max. predkosc pada w osi [x] 
+				auxData[2]=0.02; // atakDistanceX - zezwolenie na atak gdy dystans w osi [x] mnijeszy od zadanej wartosci
+				auxData[3]=0.3; // atakDistanceZ - zezwolenie na atak gdy dystans w osi [z] mnijeszy od zadanej wartosci
+				auxData[4]=21; // predkosc ataku
+				FunkcjaAtakOgrX(posKrazek, posPad2, KraVel, PadVel2, wskAtakPad2, (void*)(auxData));
+				dBodySetLinearVel(pady[2].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
+				dBodySetLinearVel(pady[3].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
+			}
 		}
 		else
-			drawText(-3.5, 1.6, -4.5, "BLAD", 1.0, 1.0, 1.0);
+			drawText(-3.5, 1.6, -4.5, "BLAD FunkcjaAtakOgrX", 1.0, 1.0, 1.0);
     
 		if( FunkcjaAtak != NULL )
 		{
-			FunkcjaAtak(posKrazek, posPad1, KraVel, PadVel, predkoscCz);
-			if(petla==400)
+			//int wyborPada = 2; // 1 - pad czerwony    2 - pad zielony
+			if(taktykaPad1 == 2)
 			{
-				dBodySetLinearVel(pady[0].Body, predkoscCz[0], predkoscCz[1], predkoscCz[2]);
-				dBodySetLinearVel(pady[1].Body, predkoscCz[0], predkoscCz[1], predkoscCz[2]);
+				FunkcjaAtak(posKrazek, posPad1, KraVel, PadVel1, wskAtakPad1);
+				dBodySetLinearVel(pady[0].Body, PadVel1[0], PadVel1[1], PadVel1[2]);
+				dBodySetLinearVel(pady[1].Body, PadVel1[0], PadVel1[1], PadVel1[2]);
+			}
+			if(taktykaPad2 == 2)
+			{
+				FunkcjaAtak(posKrazek, posPad2, KraVel, PadVel2, wskAtakPad2);
+				dBodySetLinearVel(pady[2].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
+				dBodySetLinearVel(pady[3].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
 			}
 		}
 		else
-			drawText(-3.5, 1.6, -4.5, "BLAD funkcji z atakiem", 1.0, 1.0, 1.0);
+			drawText(-3.5, 1.6, -4.5, "BLAD FunkcjaAtak", 1.0, 1.0, 1.0);
+
+		if( FunkcjaProsta != NULL && FunkcjaDistanceX != NULL)
+		{
+			float auxData[2]; // parametry za pomoca ktorych mozna dostosowac wlasciwosci taktyki
+			auxData[0]=0.12; // Max. 0.16 - zakres poruszania padem w osi [x] ->  (-rangeX; rangeX)  
+			auxData[1]=70; // predkosc pada przy dystansie = 1;
+			//int wyborPada = 1; // 1 - pad czerwony    2 - pad zielony
+			if(taktykaPad1 == 3)
+			{
+				FunkcjaProsta(posKrazek, posPad1, KraVel, PadVel1, wsk_czyWbramke, &celX);
+				FunkcjaDistanceX(posKrazek, posPad1, KraVel, PadVel1, wsk_czyWbramke, &celX, (void*)(auxData));
+				dBodySetLinearVel(pady[0].Body, PadVel1[0], 0, 0);
+				dBodySetLinearVel(pady[1].Body, PadVel1[0], 0, 0);
+			}
+			if(taktykaPad2 == 3)
+			{
+				FunkcjaProsta(posKrazek, posPad2, KraVel, PadVel2, wsk_czyWbramke, &celX);
+				FunkcjaDistanceX(posKrazek, posPad2, KraVel, PadVel2, wsk_czyWbramke, &celX, (void*)(auxData));
+				dBodySetLinearVel(pady[2].Body, PadVel2[0], 0, 0);
+				dBodySetLinearVel(pady[3].Body, PadVel2[0], 0, 0);
+			}
+		}
+		else
+			drawText(-3.5, 1.6, -4.5, "BLAD FunkcjaProsta lub FunkcjaDistanceX", 1.0, 1.0, 1.0);
+		
 		FreeLibrary( hDll );
-	
 	}
 	else
-		drawText(-3.5, 1.6, -4.5, "BLAD2", 1.0, 1.0, 1.0);
+		drawText(-3.5, 1.6, -4.5, "BLAD odcztu pliku DLL", 1.0, 1.0, 1.0);
 }
-
-void COdeWorld::funkcja_komputerowa2(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc)
-{
-	predkosc[0]=velPad[0];
-	predkosc[1]=velPad[1];
-	predkosc[2]=velPad[2];
-	predkosc[3]=velPad[3];
-	bool atak;
-	if(predkosc[3]==1)
-		atak=true;
-	else
-		atak=false;
-
-	if(abs(posKra[0] - posPad[0]) > 0.015)
-	{
-		if(posKra[0]>posPad[0])
-		{
-			if(predkosc[0]<10){
-				predkosc[0]+=0.5;
-			}
-			else
-				predkosc[0]=10;
-		}
-		if(posKra[0]<posPad[0])
-		{
-			if(predkosc[0]>-10){
-				predkosc[0]-=0.5;
-			}
-			else
-				predkosc[0]=-10;
-		}
-	}
-	else
-		predkosc[0]=0;
-	//------------- atak ----------------
-	float prAtaku=15;
-	if(posPad[2]<=0.1)
-		atak=false;
-	
-	if(atak && posKra[2]>0.1) 
-	{
-		predkosc[2]=-prAtaku; // do przodu
-	}
-	
-	if(atak==false && posPad[2]<0.25)
-	{
-		predkosc[2]=prAtaku; // do tylu
-	}
-	if(atak==false && posPad[2]>0.25)
-	{
-		predkosc[2]=0; // zatrzymanie
-		atak=true;
-	}
-	if(atak)
-		predkosc[3]=1;
-	else
-		predkosc[3]=0;
-
-	
-	//bool atak;
-	//float predkosc[4];
-	//predkosc[0]=velPad[0];
-	//predkosc[2]=velPad[2];
-	//predkosc[3]=velPad[3];
-	//if(predkosc[3]==1)
-	//	atak=true;
-	//if(predkosc[3]==0)
-	//	atak=false;
-	//if(abs(posKra[0]-posPad[0])>0.015 )
-	//{
-	//	if(posKra[0]>posPad[0])
-	//	{
-	//		if(predkosc[0]<10){
-	//			predkosc[0]+=0.5;
-	//		}
-	//		else
-	//			predkosc[0]=10;
-	//	}
-	//	if(posKra[0]<posPad[0])
-	//	{
-	//		if(predkosc[0]>-10){
-	//			predkosc[0]-=0.5;
-	//		}
-	//		else
-	//			predkosc[0]=-10;
-	//	}
-	//}
-	//else
-	//	predkosc[0]=0;
-	////-------atak-------------
-	//if(posPad[2]<=0.1)
-	//	atak=false;
-	//
-	//if(atak && posKra[2]>0.1)
-	//{
-	//	predkosc[2]=-15;
-	//}
-	//
-	//if(atak==false && posPad[2]<0.25)
-	//{
-	//	predkosc[2]=15;
-	//}
-	//if(atak==false && posPad[2]>0.25)
-	//{
-	//	predkosc[2]=0;
-	//	atak=true;
-	//}
-	//if(atak)
-	//	predkosc[3]=1;
-	//else
-	//	predkosc[3]=0;
-	//sprintf(wynik, "atak %d", atak);
-	//drawText(2.0, 2.2, -4.5, wynik, 1.0, 1.0, 1.0);
-	//return predkosc;
-}
-
-
 
 //********************************KONIEC DLL*********************************
 void COdeWorld::funkcja_ustawiajaca()
 {
-	dBodySetPosition(pady[0].Body, 0, 0.055, 0.25);	//ustawienie pozycji pada1
-	dBodySetPosition(pady[1].Body, 0, 0.07, 0.25);  //ustawienie pozycji pada1
+	dBodySetPosition(pady[0].Body, 0, 0.055, 0.35);	//ustawienie pozycji pada1
+	dBodySetPosition(pady[1].Body, 0, 0.07, 0.35);  //ustawienie pozycji pada1
 	dBodySetPosition(pady[2].Body, 0, 0.055, -0.35);//ustawienie pozycji pada2
 	dBodySetPosition(pady[3].Body, 0, 0.07, -0.35);	//ustawienie pozycji pada2
 	dBodySetLinearVel(pady[0].Body, 0, 0, 0);		//predkosci=0
@@ -340,7 +257,7 @@ void COdeWorld::DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red,
 		dGeomCylinderGetParams (g, &radius, &length);
 		geometry.DrawCylinder((const float*)pos,(const float*) R, radius, length, red, green, blue);//rysuje walec
 	}
-	if (type == dBoxClass) //rysuje szescian
+	if (type == dBoxClass) //rysuje prostopadloscian
 	{
 		dReal sides[3];
 		dGeomBoxGetLengths(g, sides);
@@ -355,7 +272,7 @@ void COdeWorld::SimStep(double dt)
 	dWorldQuickStep(World, dt); //wykonuje krok symulacji
 	dJointGroupEmpty(contactgroup);
 	for (int bodies = 0;bodies<5;bodies++)//rysowanie obiektow
-		DrawGeom(Object[bodies].Geom[0], 0, 0, 1, 1, 1); //rysuje stol (bialy)
+		DrawGeom(plansza[bodies].Geom[0], 0, 0, 1, 1, 1); //rysuje stol (bialy)
 	glPushName(1); //id obiektu - oblsuga myszki
 	DrawGeom(pady[0].Geom[0], 0, 0, 1, 0, 0); //rysuje pady
 	glPushName(1); //id obiektu - oblsuga myszki
@@ -369,7 +286,7 @@ void COdeWorld::SimStep(double dt)
 	DrawGeom(krazek.Geom[0], 0, 0, 0, 0, 1); //rysuje krazek
 	DrawGeom(bramka[0].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 1 (blekitne)
 	DrawGeom(bramka[1].Geom[0], 0, 0, 0, 1, 1); //rysuje bramke 2
-	// --------- do usuniecia po przetestowaniu naroznikow --------------
+	// --------- usunac jesli narozniki maja byc niewidoczne --------------
 	DrawGeom(naroznik[0].Geom[0], 0, 0, 1, 0, 0);
 	DrawGeom(naroznik[1].Geom[0], 0, 0, 1, 0, 0);
 	DrawGeom(naroznik[2].Geom[0], 0, 0, 1, 0, 0);
@@ -388,23 +305,49 @@ void COdeWorld::SimStep(double dt)
 	Pad1Ang=dBodyGetAngularVel (pady[0].Body); // Pobranie pr. obrotowej pada 1
 	Pad2Ang=dBodyGetAngularVel (pady[2].Body); // Pobranie pr. obrotowej pada 2
 
-	sprintf(wynik, "Predkosc pada: %.3f", predkoscCz[3]/*Pad2Vel[0]*/);
-	drawText(-2.0, 2.5, -4.5, wynik, 1.0, 1.0, 1.0);
+	if(info)
+	{
+		sprintf(wynik, "Pr. krazka [x]: %.2f [z]:%.2f", KrazekVel[0], KrazekVel[2]);
+		drawText(-2.0, 3.1, -4.5, wynik, 1.0, 1.0, 1.0);
 
-	sprintf(wynik, "Predkosc pada: %.3f", Pad1Vel[2]);
-	drawText(2.0, 2.5, -4.5, wynik, 1.0, 1.0, 1.0);
+		/*sprintf(wynik, "Poz. padaZiel [x]: %.2f [z]: %.2f", posPad2[0], posPad[2]);
+		drawText(-2.0, 3.1, -4.5, wynik, 1.0, 1.0, 1.0);*/
 
-	sprintf(wynik, "Petla: %d sila %f", petla, sila);
-	drawText(-1.5, 1.6, -4.5, wynik, 1.0, 1.0, 1.0);
-	sprintf(wynik, "x:%.3f y:%.3f z:%.3f", /*Pad1Ang[0], Pad1Ang[1], Pad1Ang[2]*/posKrazek[0], posKrazek[1], posKrazek[2]);
-	drawText(-1.5, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
+		sprintf(wynik, "Pr. padaCz [x]: %.2f [z]:%.2f", Pad1Vel[0], Pad1Vel[2]);
+		drawText(-2.0, 2.8, -4.5, wynik, 1.0, 1.0, 1.0);
+
+		sprintf(wynik, "Pr. padaZiel [x]:%.2f [z]: %.2f", Pad2Vel[0], Pad2Vel[2]);
+		drawText(-2.0, 2.5, -4.5, wynik, 1.0, 1.0, 1.0);
+
+		sprintf(wynik, "Petla: %d AtakZiel: %d", petla, atakPad2);
+		drawText(-2, 1.6, -4.5, wynik, 1.0, 1.0, 1.0);
+		sprintf(wynik, "x:%.3f y:%.3f z:%.3f", posKrazek[0], posKrazek[1], posKrazek[2]);
+		drawText(-2, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
+		 // --- wyswietlanie taktyki ----
+		if(taktykaPad1 != 1 && taktykaPad1 != 2 && taktykaPad1 != 3)
+			sprintf(wynik, "Pad1 taktyka: manual");
+		else
+			sprintf(wynik, "Pad1 taktyka: %d", taktykaPad1);
+			
+		drawText(-2, 4.1, -4.5, wynik, 1.0, 1.0, 1.0);
+
+		if(taktykaPad2 != 1 && taktykaPad2 != 2 && taktykaPad2 != 3)
+			sprintf(wynik, "Pad2 taktyka: manual");
+		else
+			sprintf(wynik, "Pad2 taktyka: %d", taktykaPad2);
+			
+		drawText(1, 4.1, -4.5, wynik, 1.0, 1.0, 1.0);
+	}
+
+	
 	// --------------- sprawdzanie i liczenie goli -------------------
+	
 	if(mD.trafienie1==true)
 	{
 		float liczba = float (rand()%21-10);				//losowanie pozycji krazka
 		liczba=liczba/1000;
 		golLicznik++;
-		dBodySetPosition(krazek.Body, liczba, 0.052, 0.2);
+		dBodySetPosition(krazek.Body, liczba, 0.052, 0.3);
 		dBodySetLinearVel(krazek.Body, 0, 0, 0);
 		funkcja_ustawiajaca();
 		mD.trafienie1=false;
@@ -414,41 +357,39 @@ void COdeWorld::SimStep(double dt)
 		float liczba = float (rand()%21-10);				//losowanie pozycji krazka
 		liczba=liczba/1000;
 		golLicznik2++;
-		dBodySetPosition(krazek.Body, liczba, 0.052, -0.27);
+		dBodySetPosition(krazek.Body, liczba, 0.052, -0.3);
 		dBodySetLinearVel(krazek.Body, 0, 0, 0);
 		funkcja_ustawiajaca();
 		mD.trafienie2=false;
 	}
-	sprintf(wynik, "Trafienia: %d : %d", golLicznik, golLicznik2);
-	drawText(-1.5, 1.0, -4.5, wynik, 1.0, 1.0, 1.0);
-	//-----------wywolanie funkcji komputerowej------------
-	dVector3 posPAD2;
-	dBodyCopyPosition (pady[2].Body, posPAD2); // Pobranie pozycji
-	//funkcja_komputerowa(posKrazek[0], posPAD2[0]);
+	if(info)
+	{
+		sprintf(wynik, "Trafienia: %d : %d", golLicznik, golLicznik2);
+		drawText(-2, 1.0, -4.5, wynik, 1.0, 1.0, 1.0);
+	}
 	
 	// konwersja const dReal --> float
 	KraVel[0]=KrazekVel[0]; 
 	KraVel[1]=KrazekVel[1];
 	KraVel[2]=KrazekVel[2];
-	PadVel[0]=Pad1Vel[0];
-	PadVel[1]=Pad1Vel[1];
-	PadVel[2]=Pad1Vel[2];
+	PadVel1[0]=Pad1Vel[0];
+	PadVel1[1]=Pad1Vel[1];
+	PadVel1[2]=Pad1Vel[2];
 	PadVel2[0]=Pad2Vel[0];
 	PadVel2[1]=Pad2Vel[1];
 	PadVel2[2]=Pad2Vel[2];
-	// - - - - - - - - - - -
-	PadVel[3]=predkoscCz[3]; // indeks "3" pelni role wartosci logicznej czy atakowac
-	PadVel2[3]=predkoscZiel[3]; // indeks "3" pelni role wartosci logicznej czy atakowac
-			//predkoscZiel[0]=Pad2Vel[0];
-	
-	//funkcja_komputerowa2(posKrazek, posPad1, KraVel, PadVel, wsk);
-	
-	sprintf(wynik, "Pr. pada: %.2f %.2f atak: %0.f", predkoscCz[0], predkoscCz[2], predkoscCz[3]);
-	drawText(0, 3, -4.5, wynik, 1.0, 1.0, 1.0);
 
+	// --- odczyt_dll ---
 	if(petla==400)
+	{
+		if(info)
+		{
+			sprintf(wynik, "czyWbramke: %d celX: %.2f", czyWbramke, celX);
+			drawText(1, 1.7, -4.5, wynik, 1.0, 1.0, 1.0);
+		}
+		
 		odczyt_dll(); // wywolanie odczytu DLL i wraz z nim sterowania komputerowego
-	
+	}
 	//----------- sterowanie obiektami ---------------------
 	if(dx[1] || dz[1] !=0)
 	{
@@ -467,13 +408,19 @@ void COdeWorld::SimStep(double dt)
 	}
 	if(petla==1)
 	{
-		dBodySetPosition(pady[0].Body, 0, 0.07, 0.25);	//ustawienie pocz¹tkowe pada1
-		dBodySetPosition(pady[1].Body, 0, 0.07, 0.265);	//ustawienie pocz¹tkowe pada1
+		dBodySetPosition(pady[0].Body, 0, 0.07, 0.35);	//ustawienie pocz¹tkowe pada1
+		dBodySetPosition(pady[1].Body, 0, 0.07, 0.35);	//ustawienie pocz¹tkowe pada1
 		dBodySetPosition(pady[2].Body, 0, 0.07, -0.35);	//ustawienie pocz¹tkowe pada2
 		dBodySetPosition(pady[3].Body, 0, 0.07, -0.35); //ustawienie pocz¹tkowe pada2
-		float liczba = float (rand()%21-10);							//losowanie pozycji krazka
+		float liczba = float (rand()%21-10); //losowanie pozycji krazka
 		liczba=liczba/1000;
-		dBodySetPosition(krazek.Body, liczba, 0.063, 0.2); // krazek
+		dBodySetPosition(krazek.Body, liczba, 0.063, 0.3); // krazek
+	}
+	if(petla==100)
+	{
+		rotation=dBodyGetRotation(krazek.Body); // Pobranie poczatkowej rotacji krazka
+		for(int i=0; i<12; i++)
+			rotation2[i]=rotation[i];
 	}
 	if(petla==400)
 	{
@@ -489,18 +436,21 @@ void COdeWorld::SimStep(double dt)
 		//dBodySetAngularVel(pady[2].Body, 0, 0, 0); // ograniczenie pr. obrotowej pada2
 		dBodySetLinearVel(pady[3].Body, *Pad2Vel, 0, *(Pad2Vel+2)); // ograniczenie pr. liniowej w osi y pada2
 		//dBodySetAngularVel(pady[3].Body, 0, 0, 0); // ograniczenie pr. obrotowej pada2
-	}
 
+		//----------- ustawienie rotacji poczatkowej krazka --------------------
+		dBodySetRotation(krazek.Body, rotation2);
+	}
+	
 	// ------------ pozycja stolu - zablokowanie POZYCJI (z mozliwoscia blokady PREDKOSCI) ---------------
 	//for(int i=0; i<5; i++)
 	//{
-	//	dBodySetLinearVel(Object[i].Body, 0, 0, 0); //zablokowanie PREDKOSCI stolu, zeby sie nie poruszal
+	//	dBodySetLinearVel(plansza[i].Body, 0, 0, 0); //zablokowanie PREDKOSCI stolu, zeby sie nie poruszal
 	//}
 	if(petla==20)
 	{
 		for(int i=0; i<5; i++)
 		{
-			dBodyCopyPosition (Object[i].Body, posStol[i]); // Pobranie poczatkowej pozycji stolu
+			dBodyCopyPosition (plansza[i].Body, posStol[i]); // Pobranie poczatkowej pozycji stolu
 			if(i<4)
 				dBodyCopyPosition (naroznik[i].Body, posNaroznik[i]); // Pobranie poczatkowej pozycji naroznikow
 			if(i<2)
@@ -510,20 +460,23 @@ void COdeWorld::SimStep(double dt)
 	if(petla>20)
 		for(int i=0; i<5; i++)
 		{
-			dBodySetPosition(Object[i].Body, posStol[i][0], posStol[i][1], posStol[i][2]); //zablokowanie POZYCJI stolu, zeby sie nie poruszal
+			dBodySetPosition(plansza[i].Body, posStol[i][0], posStol[i][1], posStol[i][2]); //zablokowanie POZYCJI stolu, zeby sie nie poruszal
 			if(i<4)
 				dBodySetPosition(naroznik[i].Body, posNaroznik[i][0], posNaroznik[i][1], posNaroznik[i][2]); // zablokowanie pozycji naro¿ników
 			if(i<2)
 				dBodySetPosition(bramka[i].Body, posBramka[i][0], posBramka[i][1], posBramka[i][2]); // zablokowanie pozycji bramek
 		}
-	// ---------------- obliczanie kolizji z krazekiem ------------------
+	// ---------------- obliczanie kolizji pada z krazekiem ------------------
 	
 	dReal distance1=sqrt(pow(posKrazek[0]-posPad1[0],2)+pow(posKrazek[2]-posPad1[2],2));
 	dReal distance2=sqrt(pow(posKrazek[0]-posPad2[0],2)+pow(posKrazek[2]-posPad2[2],2));
-	sprintf(wynik, "Odleglosc");
-	drawText(1.2, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
-	sprintf(wynik, "Pad1-krazek: %.3f", distance2);
-	drawText(1.2, 1.0, -4.5, wynik, 1.0, 1.0, 1.0);
+	if(info)
+	{
+		sprintf(wynik, "Odleglosc");
+		drawText(1.2, 1.3, -4.5, wynik, 1.0, 1.0, 1.0);
+		sprintf(wynik, "Pad2-krazek: %.3f", distance2);
+		drawText(1.2, 1.0, -4.5, wynik, 1.0, 1.0, 1.0);
+	}
 	if(distance1<=0.03) // suma promieni krazka i pada1 to 0.3
 		{
 			if(flaga1)
@@ -544,10 +497,13 @@ void COdeWorld::SimStep(double dt)
 		}
 	else
 		flaga2=true;
-	sprintf(wynik, "Odbicia krazka");
-	drawText(-1.5, 2.2, -4.5, wynik, 1.0, 1.0, 1.0);
-	sprintf(wynik, "%d : %d", licznik1, licznik2);
-	drawText(-1.5, 1.9, -4.5, wynik, 1.0, 1.0, 1.0);
+	if(info)
+	{
+		sprintf(wynik, "Odbicia krazka");
+		drawText(-2, 2.2, -4.5, wynik, 1.0, 1.0, 1.0);
+		sprintf(wynik, "%d : %d", licznik1, licznik2);
+		drawText(-2, 1.9, -4.5, wynik, 1.0, 1.0, 1.0);
+	}
 	//-------------------------------------------------------------------
 }
 void COdeWorld::InitODE()
@@ -572,99 +528,99 @@ void COdeWorld::InitODE()
 	double mass=DENSITY * 10;
 	//inicjalizacja obiektow znajdujacych sie w swiecie
 	
-	//----- podstawa
-	Object[0].Body = dBodyCreate(World);//tworzony jest obiekt
+	//----- podstawa ------
+	plansza[0].Body = dBodyCreate(World);//tworzona jest podstawa
 	sides[0] = 0.40;//ustalane sa wymiary szescianu
 	sides[1] = 0.05;
 	sides[2] = 0.80;
-	dBodySetPosition(Object[0].Body, 0.0, sides[1]/2, 0); // ustawienie pozycji
-	dBodySetLinearVel(Object[0].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dBodySetPosition(plansza[0].Body, 0.0, sides[1]/2, 0); // ustawienie pozycji
+	dBodySetLinearVel(plansza[0].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
 	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie pocatkowej orientacji obiektu
-	dBodySetRotation(Object[0].Body, R);
+	dBodySetRotation(plansza[0].Body, R);
 	dMassSetBox(&m, mass, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
-	Object[0].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
-	dGeomSetBody(Object[0].Geom[0], Object[0].Body);//powiazanie wymiarow i masy
-	dBodySetMass(Object[0].Body, &m);
+	plansza[0].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(plansza[0].Geom[0], plansza[0].Body);//powiazanie wymiarow i masy
+	dBodySetMass(plansza[0].Body, &m);
 	// ------------------ bandy ------------------
 	float bandy_h=0.02; // wysokosc band
 	float bandy_w=0.02; // szerokosc band
 
-	Object[1].Body = dBodyCreate(World);//tworzona jest prawa banda
+	plansza[1].Body = dBodyCreate(World);//tworzona jest prawa banda
 	sides[0] = bandy_w;//ustalane sa wymiary bandy
 	sides[1] = bandy_h;
 	sides[2] = 0.80;
-	dBodySetPosition(Object[1].Body, 0.19, 0.06, 0.0); // ustawienie pozycji
-	dBodySetLinearVel(Object[1].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dBodySetPosition(plansza[1].Body, 0.19, 0.06, 0.0); // ustawienie pozycji
+	dBodySetLinearVel(plansza[1].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
 	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie pocatkowej orientacji obiektu
-	dBodySetRotation(Object[1].Body, R);
+	dBodySetRotation(plansza[1].Body, R);
 	dMassSetBox(&m, mass, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
-	Object[1].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
-	dGeomSetBody(Object[1].Geom[0], Object[1].Body);//powiazanie wymiarow i masy
-	dBodySetMass(Object[1].Body, &m);
+	plansza[1].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(plansza[1].Geom[0], plansza[1].Body);//powiazanie wymiarow i masy
+	dBodySetMass(plansza[1].Body, &m);
 	
-	Object[2].Body = dBodyCreate(World);//tworzona jest lewa banda
+	plansza[2].Body = dBodyCreate(World);//tworzona jest lewa banda
 	sides[0] = bandy_w;//ustalane sa wymiary bandy
 	sides[1] = bandy_h;
 	sides[2] = 0.80;
-	dBodySetPosition(Object[2].Body, -0.19, 0.06, 0); // ustawienie pozycji
-	dBodySetLinearVel(Object[2].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dBodySetPosition(plansza[2].Body, -0.19, 0.06, 0); // ustawienie pozycji
+	dBodySetLinearVel(plansza[2].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
 	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie pocatkowej orientacji obiektu
-	dBodySetRotation(Object[2].Body, R);
+	dBodySetRotation(plansza[2].Body, R);
 	dMassSetBox(&m, mass, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
-	Object[2].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
-	dGeomSetBody(Object[2].Geom[0], Object[2].Body);//powiazanie wymiarow i masy
-	dBodySetMass(Object[2].Body, &m);
+	plansza[2].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(plansza[2].Geom[0], plansza[2].Body);//powiazanie wymiarow i masy
+	dBodySetMass(plansza[2].Body, &m);
 
-	Object[3].Body = dBodyCreate(World);//tworzona jest banda tylnia
+	plansza[3].Body = dBodyCreate(World);//tworzona jest banda tylnia
 	sides[0] = 0.36;//ustalane sa wymiary bandy
 	sides[1] = bandy_h;
 	sides[2] = bandy_h;
-	dBodySetPosition(Object[3].Body, 0.0, 0.06, -0.39); // ustawienie pozycji
-	dBodySetLinearVel(Object[3].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dBodySetPosition(plansza[3].Body, 0.0, 0.06, -0.39); // ustawienie pozycji
+	dBodySetLinearVel(plansza[3].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
 	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie pocatkowej orientacji obiektu
-	dBodySetRotation(Object[3].Body, R);
+	dBodySetRotation(plansza[3].Body, R);
 	dMassSetBox(&m, mass*10, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
-	Object[3].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
-	dGeomSetBody(Object[3].Geom[0], Object[3].Body);//powiazanie wymiarow i masy
-	dBodySetMass(Object[3].Body, &m);
+	plansza[3].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(plansza[3].Geom[0], plansza[3].Body);//powiazanie wymiarow i masy
+	dBodySetMass(plansza[3].Body, &m);
 
-	Object[4].Body = dBodyCreate(World);//tworzona jest banda przednia
+	plansza[4].Body = dBodyCreate(World);//tworzona jest banda przednia
 	sides[0] = 0.36;//ustalane sa wymiary bandy
 	sides[1] = bandy_h;
 	sides[2] = bandy_h;
-	dBodySetPosition(Object[4].Body, 0.0, 0.06, 0.39); // ustawienie pozycji
-	dBodySetLinearVel(Object[4].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
+	dBodySetPosition(plansza[4].Body, 0.0, 0.06, 0.39); // ustawienie pozycji
+	dBodySetLinearVel(plansza[4].Body, 0, 0, 0);//ustawienie poczatkowej predkosci obiektow
 	dRFromAxisAndAngle(R, 0, 0, 0, 0);//ustawienie poczatkowej orientacji obiektu
-	dBodySetRotation(Object[4].Body, R);
+	dBodySetRotation(plansza[4].Body, R);
 	dMassSetBox(&m, mass*10, sides[0], sides[1], sides[2]);//utworzenie szescianu - masa
-	Object[4].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
-	dGeomSetBody(Object[4].Geom[0], Object[4].Body);//powiazanie wymiarow i masy
-	dBodySetMass(Object[4].Body, &m);
+	plansza[4].Geom[0] = dCreateBox(Space, sides[0], sides[1], sides[2]);//utworzenie szescianu - wymiary
+	dGeomSetBody(plansza[4].Geom[0], plansza[4].Body);//powiazanie wymiarow i masy
+	dBodySetMass(plansza[4].Body, &m);
 
 	//---------------- Jointy band -------------------------
 	Joints[0] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints[0], Object[0].Body, Object[1].Body);
+    dJointAttach(Joints[0], plansza[0].Body, plansza[1].Body);
     dJointSetHingeAnchor(Joints[0], 0.19, 0, 0);//pozycja
     dJointSetHingeAxis(Joints[0], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints[0], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints[0], dParamHiStop, 0);//ruchu
 
 	Joints[1] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints[1], Object[0].Body, Object[2].Body);
+    dJointAttach(Joints[1], plansza[0].Body, plansza[2].Body);
     dJointSetHingeAnchor(Joints[1], -0.19, 0, 0);//pozycja
     dJointSetHingeAxis(Joints[1], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints[1], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints[1], dParamHiStop, 0);//ruchu
 
 	Joints[2] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints[2], Object[0].Body, Object[3].Body);
+    dJointAttach(Joints[2], plansza[0].Body, plansza[3].Body);
     dJointSetHingeAnchor(Joints[2], 0, 0, 0.39);//pozycja
     dJointSetHingeAxis(Joints[2], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints[2], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints[2], dParamHiStop, 0);//ruchu
 
 	Joints[3] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints[3], Object[0].Body, Object[4].Body);
+    dJointAttach(Joints[3], plansza[0].Body, plansza[4].Body);
     dJointSetHingeAnchor(Joints[3], 0, 0, -0.39);//pozycja
     dJointSetHingeAxis(Joints[3], 0, 1, 0);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints[3], dParamLoStop, 0);//mozliwy zakres 
@@ -724,28 +680,28 @@ void COdeWorld::InitODE()
 	dBodySetMass(naroznik[3].Body, &m);
 
 	Joints_naroznik[0] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints_naroznik[0], Object[0].Body, naroznik[0].Body);
+    dJointAttach(Joints_naroznik[0], plansza[0].Body, naroznik[0].Body);
     dJointSetHingeAnchor(Joints_naroznik[0], 0.1775, 0.3775, 0);//pozycja
     dJointSetHingeAxis(Joints_naroznik[0], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints_naroznik[0], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints_naroznik[0], dParamHiStop, 0);//ruchu
 
 	Joints_naroznik[1] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints_naroznik[1], Object[0].Body, naroznik[1].Body);
+    dJointAttach(Joints_naroznik[1], plansza[0].Body, naroznik[1].Body);
     dJointSetHingeAnchor(Joints_naroznik[1], -0.1775, 0.3775, 0);//pozycja
     dJointSetHingeAxis(Joints_naroznik[1], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints_naroznik[1], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints_naroznik[1], dParamHiStop, 0);//ruchu
 
 	Joints_naroznik[2] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints_naroznik[2], Object[0].Body, naroznik[2].Body);
+    dJointAttach(Joints_naroznik[2], plansza[0].Body, naroznik[2].Body);
     dJointSetHingeAnchor(Joints_naroznik[2], -0.1775, -0.3775, 0);//pozycja
     dJointSetHingeAxis(Joints_naroznik[2], 0, 0, 1);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints_naroznik[2], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints_naroznik[2], dParamHiStop, 0);//ruchu
 
 	Joints_naroznik[3] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints_naroznik[3], Object[0].Body, naroznik[3].Body);
+    dJointAttach(Joints_naroznik[3], plansza[0].Body, naroznik[3].Body);
     dJointSetHingeAnchor(Joints_naroznik[3], 0.1775, -0.3775, 0);//pozycja
     dJointSetHingeAxis(Joints_naroznik[3], 0, 1, 0);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints_naroznik[3], dParamLoStop, 0);//mozliwy zakres 
@@ -865,21 +821,21 @@ void COdeWorld::InitODE()
 	dBodySetMass(bramka[1].Body, &m);
 
 	Joints_bramka[0] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints_bramka[0], Object[3].Body, bramka[0].Body);
+    dJointAttach(Joints_bramka[0], plansza[3].Body, bramka[0].Body);
     dJointSetHingeAnchor(Joints_bramka[0], 0.19, 0, 0);//pozycja
     dJointSetHingeAxis(Joints_bramka[0], 0, 1, 0);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints_bramka[0], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints_bramka[0], dParamHiStop, 0);//ruchu
 
 	Joints_bramka[1] = dJointCreateHinge(World, jointgroup);
-    dJointAttach(Joints_bramka[1], Object[4].Body, bramka[1].Body);
+    dJointAttach(Joints_bramka[1], plansza[4].Body, bramka[1].Body);
     dJointSetHingeAnchor(Joints_bramka[1], 0.19, 0, 0);//pozycja
     dJointSetHingeAxis(Joints_bramka[1], 0, 1, 0);//os wzdluz ktorej prowadzi zlacze
     dJointSetHingeParam(Joints_bramka[1], dParamLoStop, 0);//mozliwy zakres 
     dJointSetHingeParam(Joints_bramka[1], dParamHiStop, 0);//ruchu
 
 	mD.krazek=krazek.Geom[0];
-	mD.boisko=Object[0].Geom[0];
+	mD.boisko=plansza[0].Geom[0];
 	mD.Pad1=pady[0].Geom[0];
 	mD.Pad2=pady[2].Geom[0];
 	mD.bramka1=bramka[0].Geom[0];

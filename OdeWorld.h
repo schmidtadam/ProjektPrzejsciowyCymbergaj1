@@ -1,32 +1,33 @@
 #pragma once
 
-#include <conio.h>
-#include <Windows.h>
-#include <stdio.h>
-#include <ctime>
-
 #include <gl\glut.h> // glut.h includes gl.h and glu.h
 #include <ode/ode.h> // ode library header
 #include "matrix.h"
 #include "Ground.h"
 #include "OdeGeom.h"
 
-typedef void (*PROCRunThisModule)(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
-extern "C" void funkcja_komputerowa(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
+typedef void (*PROCRunAtakOgrX)(float* posKra, float* posPad, float* velKra, float* velPad, bool* atak, void* dane);
+extern "C" void funkcjaAtakOgrX(float* posKra, float* posPad, float* velKra, float* velPad, bool* atak, void* dane);
 
-typedef void (*PROCRunAtak)(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
-extern "C" void funkcjaAtak(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
+typedef void (*PROCRunAtak)(float* posKra, float* posPad, float* velKra, float* velPad, bool* atak);
+extern "C" void funkcjaAtak(float* posKra, float* posPad, float* velKra, float* velPad, bool* atak);
+
+typedef void (*PROCRunProsta)(float* posKra, float* posPad, float* velKra, float* velPad, bool* czyWbramke, float* celX);
+extern "C" void funkcjaProsta(float* posKra, float* posPad, float* velKra, float* velPad, bool* czyWbramke, float* celX);
+
+typedef void (*PROCRunDistanceX)(float* posKra, float* posPad, float* velKra, float* velPad, bool* czyWbramke, float* celX, void* dane);
+extern "C" void funkcjaDistanceX(float* posKra, float* posPad, float* velKra, float* velPad, bool* czyWbramke, float* celX, void* dane);
 
 // some constants
-#define DENSITY (0.5) // density of all objects
+#define DENSITY (0.5) // density of all planszas
 #define GEOMSPERBODY 1 // maximum number of geometries per body
 #define MAX_CONTACTS 4 // maximum number of contact points per body
 
-typedef struct MyObject //struktura reprezentujaca obiekty
+typedef struct Myplansza //struktura reprezentujaca obiekty
 {
 	dBodyID Body; // the dynamics body
 	dGeomID Geom[GEOMSPERBODY]; // geometries representing this body
-} MyObject;
+} Myplansza;
 
 class COdeWorld
 {
@@ -40,26 +41,28 @@ public:
 	void DrawGeom(dGeomID g, const dReal *pos, const dReal *R, float red, float green, float blue);//rysuje figury na scenie
 	void setServo(int servo_nr, double value);
 	void drawText(float x, float y, float z, char *string, float red, float green, float blue);//tekst
-	void funkcja_komputerowa(float x1, float x2);
 	void odczyt_dll();
-	void funkcja_komputerowa2(float* posKra, float* posPad, float* velKra, float* velPad, float* predkosc);
 	void funkcja_ustawiajaca();
 
 	MATRIX GeomMatrix;
-	// -------- dynamics and collision objects ----------
+	// -------- dynamics and collision plansza ----------
 	dSpaceID Space; // collision space
 	dSpaceID Space2; // collision space
 	dJointGroupID jointgroup; // contact group for the new joint
 	dJointID Joint; // the joint ID
-	MyObject Object[5]; // tablica z obiektami które wystepuja na scenie
-	MyObject krazek;
-	MyObject bramka[2];
-	MyObject pady[4];
-	MyObject naroznik[4];
+	Myplansza plansza[5]; // tablica z obiektami tworzacymi plansze
+	Myplansza krazek;
+	Myplansza bramka[2];
+	Myplansza pady[4];
+	Myplansza naroznik[4];
 	CGround ground; //ziemia
 	dGeomID plane; //ground in ode
 	COdeGeom geometry; //klasa rysujaca obiekty na scenie
-
+	
+	dJointID Joints[10];
+	dJointID Joints2[10];
+	dJointID Joints_bramka[5];
+	dJointID Joints_naroznik[4];
 	// ------------ struktura przekazywana do funkcji nearCallback --------
 	struct mD
 	{
@@ -82,22 +85,28 @@ public:
 	dVector3 posBramka[2];
 
 	const dReal *Pad1Vel; //predkosci padow
-	float PadVel[4];
+	float PadVel1[3];
 	const dReal *Pad2Vel;
-	float PadVel2[4];
+	float PadVel2[3];
 	const dReal *Pad1Ang; //predkosci katowe padow
 	const dReal *Pad2Ang;
 	const dReal *KrazekVel; //predkosc krazka
 	float KraVel[3];
 	const dReal *KrazekAng; //predkosc katowa krazka
-	float* wsk;
-	float predkoscCz[4];
-	float predkoscZiel[4];
+
+	bool atakPad1;
+	bool* wskAtakPad1;
+	bool atakPad2;
+	bool* wskAtakPad2;
+
+	bool czyWbramke; // zmienna przechowujaca informacje czy krazek zmierza w swiatlo bramki
+	bool *wsk_czyWbramke;
+	float celX; // wsp. [x], w ktorej krazek potencjalnie przetnie linie koncowa (wsp. [z] bramki)
 	//-----------------------------------------------------------------------------------
-	char wynik[20]; // tablica znakow do wyswietlania wynikow
-	int size;
+	char wynik[25]; // tablica znakow do wyswietlania wynikow
 	float dx[3], dy[3], dz[3]; // przyrost sily
-	float sila;			// zmienna do sterowania komputerowego
+	short int taktykaPad1;
+	short int taktykaPad2;
 	// --------- kolizje - liczniki ----------
 	int licznik1, licznik2; // liczniki odbic krazka przez pady
 	int golLicznik, golLicznik2; // liczniki goli
@@ -105,9 +114,11 @@ public:
 	bool flaga2;
 	
 	//----------------------------------
-	dJointID Joints[10];
-	dJointID Joints2[10];
-	dJointID Joints_bramka[5];
-	dJointID Joints_naroznik[4];
+
 	int petla; // zmienna iteruj¹ca obiegi pêtli glownej
+
+	const dReal* rotation; // rotacja krazka
+	dReal rotation2[12];
+
+	bool info; // jesli zmienna jest prawdziwa to pokazywane sa informacje, jesli nie to znikaja
 };
