@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OGL2", "OGL2.vcxproj", "{D468AD25-E1B0-4F27-A810-B10E22A37B5F}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Cymbergaj Install", "..\Cymbergaj Install\Cymbergaj Install.vdproj", "{EC778AE1-A2E3-4829-9CAD-6AB358A6F201}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +15,8 @@ Global
 		{D468AD25-E1B0-4F27-A810-B10E22A37B5F}.Debug|Win32.Build.0 = Debug|Win32
 		{D468AD25-E1B0-4F27-A810-B10E22A37B5F}.Release|Win32.ActiveCfg = Release|Win32
 		{D468AD25-E1B0-4F27-A810-B10E22A37B5F}.Release|Win32.Build.0 = Release|Win32
+		{EC778AE1-A2E3-4829-9CAD-6AB358A6F201}.Debug|Win32.ActiveCfg = Debug
+		{EC778AE1-A2E3-4829-9CAD-6AB358A6F201}.Release|Win32.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

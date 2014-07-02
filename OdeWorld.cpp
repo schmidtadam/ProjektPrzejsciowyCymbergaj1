@@ -129,8 +129,9 @@ COdeWorld::~COdeWorld(void)
 //*********************************DLL***************************************
 void COdeWorld::odczyt_dll()
 {
-	HINSTANCE hDll;
+	HINSTANCE hDll, hDll2;
 	hDll = LoadLibrary("VSDLL.dll" );
+	hDll2 = LoadLibrary("VSDLL2.dll" );
 
 	if( hDll != NULL )
 	{
@@ -155,37 +156,17 @@ void COdeWorld::odczyt_dll()
 				dBodySetLinearVel(pady[0].Body, PadVel1[0], PadVel1[1], PadVel1[2]);
 				dBodySetLinearVel(pady[1].Body, PadVel1[0], PadVel1[1], PadVel1[2]);
 			}
-			//wyborPada=2;
-			if(taktykaPad2 == 1) // domyslna taktyka
-			{
-				float auxData[5];
-				auxData[0]=0.14; // Max. 0.16 - zakres poruszania padem w osi [x] ->  (-rangeX; rangeX)
-				auxData[1]=15; // max. predkosc pada w osi [x] 
-				auxData[2]=0.02; // atakDistanceX - zezwolenie na atak gdy dystans w osi [x] mnijeszy od zadanej wartosci
-				auxData[3]=0.3; // atakDistanceZ - zezwolenie na atak gdy dystans w osi [z] mnijeszy od zadanej wartosci
-				auxData[4]=21; // predkosc ataku
-				FunkcjaAtakOgrX(posKrazek, posPad2, KraVel, PadVel2, wskAtakPad2, (void*)(auxData));
-				dBodySetLinearVel(pady[2].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
-				dBodySetLinearVel(pady[3].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
-			}
 		}
 		else
 			drawText(-3.5, 1.6, -4.5, "BLAD FunkcjaAtakOgrX", 1.0, 1.0, 1.0);
     
 		if( FunkcjaAtak != NULL )
 		{
-			//int wyborPada = 2; // 1 - pad czerwony    2 - pad zielony
 			if(taktykaPad1 == 2)
 			{
 				FunkcjaAtak(posKrazek, posPad1, KraVel, PadVel1, wskAtakPad1);
 				dBodySetLinearVel(pady[0].Body, PadVel1[0], PadVel1[1], PadVel1[2]);
 				dBodySetLinearVel(pady[1].Body, PadVel1[0], PadVel1[1], PadVel1[2]);
-			}
-			if(taktykaPad2 == 2)
-			{
-				FunkcjaAtak(posKrazek, posPad2, KraVel, PadVel2, wskAtakPad2);
-				dBodySetLinearVel(pady[2].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
-				dBodySetLinearVel(pady[3].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
 			}
 		}
 		else
@@ -204,6 +185,61 @@ void COdeWorld::odczyt_dll()
 				dBodySetLinearVel(pady[0].Body, PadVel1[0], 0, 0);
 				dBodySetLinearVel(pady[1].Body, PadVel1[0], 0, 0);
 			}
+		}
+		else
+			drawText(-3.5, 1.6, -4.5, "BLAD FunkcjaProsta lub FunkcjaDistanceX", 1.0, 1.0, 1.0);
+		
+		FreeLibrary( hDll );
+	}
+	else
+		drawText(-3.5, 1.6, -4.5, "BLAD odcztu pliku DLL", 1.0, 1.0, 1.0);
+
+	if( hDll2 != NULL )
+	{
+		// jeœli wszystko posz³o dobrze, tutaj mo¿emy wywo³aæ jak¹œ funkcjê biblioteczn¹
+	
+		PROCRunAtakOgrX FunkcjaAtakOgrX = (PROCRunAtakOgrX)GetProcAddress(hDll2, "funkcjaAtakOgrX"); 
+		PROCRunAtak FunkcjaAtak = (PROCRunAtak)GetProcAddress(hDll2, "funkcjaAtak");
+		PROCRunProsta FunkcjaProsta = (PROCRunProsta)GetProcAddress(hDll2, "funkcjaProsta");
+		PROCRunDistanceX FunkcjaDistanceX = (PROCRunDistanceX)GetProcAddress(hDll2, "funkcjaDistanceX");
+		if( FunkcjaAtakOgrX != NULL )
+		{
+			//wyborPada=2;
+			if(taktykaPad2 == 1) // domyslna taktyka
+			{
+				float auxData[5];
+				auxData[0]=0.14; // Max. 0.16 - zakres poruszania padem w osi [x] ->  (-rangeX; rangeX)
+				auxData[1]=15; // max. predkosc pada w osi [x] 
+				auxData[2]=0.02; // atakDistanceX - zezwolenie na atak gdy dystans w osi [x] mnijeszy od zadanej wartosci
+				auxData[3]=0.3; // atakDistanceZ - zezwolenie na atak gdy dystans w osi [z] mnijeszy od zadanej wartosci
+				auxData[4]=21; // predkosc ataku
+				FunkcjaAtakOgrX(posKrazek, posPad2, KraVel, PadVel2, wskAtakPad2, (void*)(auxData));
+				dBodySetLinearVel(pady[2].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
+				dBodySetLinearVel(pady[3].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
+			}
+		}
+		else
+			drawText(-3.5, 1.9, -4.5, "BLAD FunkcjaAtakOgrX", 1.0, 1.0, 1.0);
+    
+		if( FunkcjaAtak != NULL )
+		{
+			
+			if(taktykaPad2 == 2)
+			{
+				FunkcjaAtak(posKrazek, posPad2, KraVel, PadVel2, wskAtakPad2);
+				dBodySetLinearVel(pady[2].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
+				dBodySetLinearVel(pady[3].Body, PadVel2[0], PadVel2[1], PadVel2[2]);
+			}
+		}
+		else
+			drawText(-3.5, 1.9, -4.5, "BLAD FunkcjaAtak", 1.0, 1.0, 1.0);
+
+		if( FunkcjaProsta != NULL && FunkcjaDistanceX != NULL)
+		{
+			float auxData[2]; // parametry za pomoca ktorych mozna dostosowac wlasciwosci taktyki
+			auxData[0]=0.12; // Max. 0.16 - zakres poruszania padem w osi [x] ->  (-rangeX; rangeX)  
+			auxData[1]=70; // predkosc pada przy dystansie = 1;
+			
 			if(taktykaPad2 == 3)
 			{
 				FunkcjaProsta(posKrazek, posPad2, KraVel, PadVel2, wsk_czyWbramke, &celX);
@@ -213,12 +249,12 @@ void COdeWorld::odczyt_dll()
 			}
 		}
 		else
-			drawText(-3.5, 1.6, -4.5, "BLAD FunkcjaProsta lub FunkcjaDistanceX", 1.0, 1.0, 1.0);
+			drawText(-3.5, 1.9, -4.5, "BLAD FunkcjaProsta lub FunkcjaDistanceX", 1.0, 1.0, 1.0);
 		
-		FreeLibrary( hDll );
+		FreeLibrary( hDll2 );
 	}
 	else
-		drawText(-3.5, 1.6, -4.5, "BLAD odcztu pliku DLL", 1.0, 1.0, 1.0);
+		drawText(-3.5, 1.9, -4.5, "BLAD odcztu pliku DLL2", 1.0, 1.0, 1.0);
 }
 
 //********************************KONIEC DLL*********************************
@@ -597,7 +633,7 @@ void COdeWorld::InitODE()
 	dGeomSetBody(plansza[4].Geom[0], plansza[4].Body);//powiazanie wymiarow i masy
 	dBodySetMass(plansza[4].Body, &m);
 
-	//---------------- Jointy band -------------------------
+	//---------------- Jointy band ---------------------------
 	Joints[0] = dJointCreateHinge(World, jointgroup);
     dJointAttach(Joints[0], plansza[0].Body, plansza[1].Body);
     dJointSetHingeAnchor(Joints[0], 0.19, 0, 0);//pozycja

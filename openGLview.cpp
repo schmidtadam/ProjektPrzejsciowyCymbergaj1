@@ -14,10 +14,10 @@ openGLview::openGLview(void)
 		bufor[i]=0;
 	numBufor=0;
 
-	gluLookAt( // ustawienie pocz¹tkowe kamery
-	0.0, 350.0, 0.0,
-	0.0, 0.0, 0.0,
-	0.0, 0.0, 1.0);
+	//gluLookAt( // ustawienie pocz¹tkowe kamery
+	//0.0, 350.0, 3500.0,
+	//0.0, 0.0, 0.0,
+	//0.0, 0.0, 1.0);
 }
 
 
@@ -111,7 +111,7 @@ void openGLview::keyboard(unsigned char key, int x, int y)// metoda w zaleÂżno
 			if(bufor[3] == '3')
 				dynamicWorld.taktykaPad2 = 3;
 			if(bufor[3] == '4')
-				dynamicWorld.taktykaPad1 = 4;
+				dynamicWorld.taktykaPad2 = 4;
 		}
 	}
 	// ---- pokaz informacje o rozgrywce ----
@@ -148,7 +148,7 @@ gluPerspective(45.0, (float)width / (float)height, 0.1, 1000.0);
 glMatrixMode(GL_MODELVIEW);
 glLoadIdentity();
 gluLookAt( // ustawienie pocz¹tkowe kamery
-0.0, 0.0, 350.0,
+0.0, 100.0, 350.0,
 0.0, 0.0, 0.0,
 0.0, 1.0, 0.0);
 }
@@ -168,6 +168,13 @@ void openGLview::loadTextureFromFile(char *filename)
 
 void openGLview::rysuj_figury(void)
 {
+	if(dynamicWorld.info == false)
+	{
+		gluLookAt( // ustawienie pocz¹tkowe kamery
+0.0, 100.0, 350.0,
+0.0, 0.0, 0.0,
+0.0, 1.0, 0.0);
+	}
 	sprintf(tekst, "info: %d", dynamicWorld.info);
 	drawText(-2.0, 3.7, -4.5, tekst);
 	if(dynamicWorld.info)
